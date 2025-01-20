@@ -42,44 +42,41 @@ export const FormSchema = z.object({
   description: z.string().optional(),
   fields: z.array(FormFieldSchema),
 });
-export type Form = z.infer<typeof FormSchema>;
+export type FormSchema = z.infer<typeof FormSchema>;
 
 // Helper to create the runtime validation schema for react-hook-form
-export function createFormValidationSchema(form: Form) {
+export function createFormValidationSchema(form: FormSchema) {
   const shape: Record<string, z.ZodType> = {};
 
   for (const field of form.fields) {
-    let fieldSchema = z.string();
+    let baseSchema = z.string();
 
     // Add validations based on field type and constraints
     if (field.required) {
-      fieldSchema = fieldSchema.min(1, {
+      baseSchema = baseSchema.min(1, {
         message: `${field.label} is required`,
       });
     }
-    // else {
-    //   fieldSchema = fieldSchema.nullable();
-    // }
 
     if (field.minLength) {
-      fieldSchema = fieldSchema.min(field.minLength, {
+      baseSchema = baseSchema.min(field.minLength, {
         message: `${field.label} must be at least ${field.minLength} characters`,
       });
     }
 
     if (field.maxLength) {
-      fieldSchema = fieldSchema.max(field.maxLength, {
+      baseSchema = baseSchema.max(field.maxLength, {
         message: `${field.label} must be at most ${field.maxLength} characters`,
       });
     }
 
     if (field.type === "text" && field.pattern) {
-      fieldSchema = fieldSchema.regex(new RegExp(field.pattern), {
+      baseSchema = baseSchema.regex(new RegExp(field.pattern), {
         message: `${field.label} has an invalid format`,
       });
     }
 
-    shape[field.name] = fieldSchema;
+    shape[field.name] = field.required ? baseSchema : baseSchema.optional();
   }
 
   return z.object(shape);

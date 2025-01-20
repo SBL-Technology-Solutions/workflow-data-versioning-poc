@@ -59,30 +59,36 @@ export async function createFormVersion(
 export async function createDataVersion(
   workflowInstanceId: number,
   formDefId: number,
-  data: any,
-  previousVersion?: number
+  data: any
 ) {
+  console.log("workflowInstanceId: ", workflowInstanceId);
+  console.log("formDefId: ", formDefId);
+  console.log("data: ", data);
   let patch = data; // First version stores full data as patch
 
-  if (previousVersion) {
-    const previousData = await db
-      .select()
-      .from(formDataVersions)
-      .where(
-        and(
-          eq(formDataVersions.workflowInstanceId, workflowInstanceId),
-          eq(formDataVersions.version, previousVersion)
-        )
-      );
+  const previousData = await db
+    .select()
+    .from(formDataVersions)
+    .where(
+      and(
+        eq(formDataVersions.workflowInstanceId, workflowInstanceId),
+        eq(formDataVersions.formDefId, formDefId)
+      )
+    )
+    .orderBy(desc(formDataVersions.version))
+    .limit(1);
 
-    // Generate JSON Patch
+  console.log("previousData: ", previousData);
+
+  if (previousData.length) {
     patch = createJSONPatch(previousData[0].data, data);
   }
+  console.log("patch: ", patch);
 
   return await db.insert(formDataVersions).values({
     workflowInstanceId,
     formDefId,
-    version: previousVersion ? previousVersion + 1 : 1,
+    version: previousData.length ? previousData[0].version + 1 : 1,
     data,
     patch,
     createdBy: "user",
@@ -115,75 +121,6 @@ export async function compareVersions(
     version2: v2?.data,
     diff: createJSONPatch(v1?.data, v2?.data),
   };
-}
-
-export async function getWorkflowInstance(id: number) {
-  const result = await db
-    .select({
-      id: workflowInstances.id,
-      workflowDefId: workflowInstances.workflowDefId,
-      currentState: workflowInstances.currentState,
-      machineConfig: workflowDefinitions.machineConfig,
-    })
-    .from(workflowInstances)
-    .leftJoin(
-      workflowDefinitions,
-      eq(workflowDefinitions.id, workflowInstances.workflowDefId)
-    )
-    .where(eq(workflowInstances.id, id))
-    .limit(1);
-
-  if (!result.length) {
-    throw new Error("Workflow instance not found");
-  }
-
-  if (!result[0].workflowDefId) {
-    throw new Error("Workflow definition ID not found");
-  }
-
-  if (!result[0].machineConfig) {
-    throw new Error("Workflow definition not found");
-  }
-
-  return result[0];
-}
-
-export async function getCurrentForm(
-  workflowInstanceId: number,
-  state: string
-) {
-  // Get the workflow instance to find the workflow definition ID
-  const result = await db
-    .select({
-      workflowDefId: workflowInstances.workflowDefId,
-      formId: formDefinitions.id,
-      schema: formDefinitions.schema,
-    })
-    .from(workflowInstances)
-    .leftJoin(
-      formDefinitions,
-      and(
-        eq(formDefinitions.workflowDefId, workflowInstances.workflowDefId),
-        eq(formDefinitions.state, state)
-      )
-    )
-    .where(eq(workflowInstances.id, workflowInstanceId))
-    .orderBy(desc(formDefinitions.version))
-    .limit(1);
-
-  if (!result.length) {
-    throw new Error("Workflow instance not found");
-  }
-
-  if (!result[0].workflowDefId) {
-    throw new Error("Workflow definition ID not found");
-  }
-
-  if (!result[0].formId) {
-    throw new Error(`No form found for state: ${state}`);
-  }
-
-  return result[0];
 }
 
 export async function updateWorkflowState(id: number, newState: string) {

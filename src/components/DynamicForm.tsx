@@ -1,122 +1,150 @@
 "use client";
 
+import { FormState } from "@/app/server/actions/onSubmitAction";
+import { Button } from "@/components/ui/button";
 import {
-  type Form,
-  type FormField,
-  createFormValidationSchema,
-} from "@/lib/types/form";
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { createFormValidationSchema, type FormSchema } from "@/lib/types/form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useTransition } from "react";
+import { startTransition, useActionState, useRef } from "react";
 import { useForm } from "react-hook-form";
-
+import { z } from "zod";
 interface DynamicFormProps {
-  schema: Form;
+  schema: FormSchema;
   initialData?: Record<string, any>;
-  //   onSubmit: (data: Record<string, any>) => Promise<void> | void;
+  action: (prevState: FormState, formData: FormData) => Promise<FormState>;
 }
 
-export const DynamicForm: React.FC<DynamicFormProps> = ({
+export const DynamicForm = ({
   schema,
   initialData,
-  //   onSubmit,
-}) => {
-  const [isPending, startTransition] = useTransition();
-
+  action,
+}: DynamicFormProps) => {
   const validationSchema = createFormValidationSchema(schema);
 
-  const form = useForm({
+  // Create initial data if not provided
+  const defaultInitialData = schema.fields.reduce<Record<string, string>>(
+    (acc, field) => {
+      acc[field.name] = "";
+      return acc;
+    },
+    {}
+  );
+  console.log("initialData: ", initialData);
+  console.log("defaultInitialData: ", defaultInitialData);
+
+  const [formState, formAction, pending] = useActionState<FormState, FormData>(
+    action,
+    {
+      success: false,
+    }
+  );
+
+  const effectiveInitialData =
+    initialData ?? formState?.fields ?? defaultInitialData;
+  console.log("effectiveInitialData: ", effectiveInitialData);
+
+  const form = useForm<z.output<typeof validationSchema>>({
     resolver: zodResolver(validationSchema),
-    defaultValues: initialData,
+    defaultValues: effectiveInitialData,
+    mode: "onTouched",
   });
 
-  const handleSubmitPromise = (data: Record<string, any>) => {
-    startTransition(async () => {
-      try {
-        // await onSubmit(data);
-        form.reset();
-      } catch (error) {
-        console.error("Form submission failed:", error);
-      }
-    });
-  };
+  console.log(form.formState);
+  console.log("fields returned: ", { ...(formState?.fields ?? {}) });
 
-  const handleSubmit = (data: Record<string, any>) => {
-    console.log("handleSubmit", data);
-  };
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const renderField = (field: FormField) => {
-    const commonProps = {
-      ...form.register(field.name),
-      disabled: isPending,
-      required: field.required,
-      "aria-describedby": field.description
-        ? `${field.name}-description`
-        : undefined,
-    };
-
-    switch (field.type) {
-      case "text":
-        return (
-          <input
-            type="text"
-            className="border rounded p-2 w-full"
-            minLength={field.minLength}
-            maxLength={field.maxLength}
-            pattern={field.pattern}
-            {...commonProps}
-          />
-        );
-      case "textarea":
-        return (
-          <textarea
-            className="border rounded p-2 w-full"
-            rows={field.rows}
-            minLength={field.minLength}
-            maxLength={field.maxLength}
-            {...commonProps}
-          />
-        );
-    }
-  };
+  const renderField = (name: string, field: FormSchema["fields"][number]) => (
+    <FormField
+      control={form.control}
+      name={name}
+      render={({ field: formField }) => (
+        <FormItem>
+          <FormLabel>
+            {field.label}
+            {field.required && <span className="text-destructive ml-1">*</span>}
+          </FormLabel>
+          <FormControl>
+            {field.type === "textarea" ? (
+              <Textarea
+                {...formField}
+                disabled={pending}
+                rows={field.rows}
+                placeholder={field.description}
+              />
+            ) : (
+              <Input
+                {...formField}
+                type={field.type}
+                disabled={pending}
+                placeholder={field.description}
+              />
+            )}
+          </FormControl>
+          {field.description && (
+            <FormDescription>{field.description}</FormDescription>
+          )}
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
 
   return (
-    <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-      {schema.title && (
-        <h2 className="text-xl font-semibold">{schema.title}</h2>
-      )}
-      {schema.description && (
-        <p className="text-gray-600 mb-4">{schema.description}</p>
-      )}
-
-      {schema.fields.map((field) => (
-        <div key={field.name} className="flex flex-col">
-          <label className="text-sm font-medium mb-1">
-            {field.label}
-            {field.required && <span className="text-red-500 ml-1">*</span>}
-          </label>
-          {field.description && (
-            <p
-              id={`${field.name}-description`}
-              className="text-sm text-gray-500 mb-1"
-            >
-              {field.description}
-            </p>
-          )}
-          {renderField(field)}
-          {form.formState.errors[field.name] && (
-            <span className="text-red-500 text-sm mt-1">
-              {form.formState.errors[field.name]?.message?.toString()}
-            </span>
-          )}
+    <Form {...form}>
+      {formState.message !== "" && !formState?.errors && (
+        <div className="text-destructive">
+          <p>{formState.message}</p>
         </div>
-      ))}
-      <button
-        type="submit"
-        className="bg-blue-500 text-white px-4 py-2 rounded disabled:opacity-50"
-        disabled={isPending}
+      )}
+      {formState?.errors && (
+        <div>
+          <ul>
+            {Object.entries(formState.errors).map(([key, value]) => (
+              <li key={key} className="flex gap-1 text-destructive">
+                {key}: {value?.join(", ")}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <form
+        ref={formRef}
+        action={formAction}
+        onSubmit={(evt) => {
+          evt.preventDefault();
+          form.handleSubmit(() => {
+            console.log("formRef.current: ", formRef.current);
+            startTransition(() => formAction(new FormData(formRef.current!)));
+          })(evt);
+        }}
+        className="space-y-6"
       >
-        {isPending ? "Submitting..." : "Submit"}
-      </button>
-    </form>
+        {schema.title && (
+          <h2 className="text-xl font-semibold">{schema.title}</h2>
+        )}
+        {schema.description && (
+          <p className="text-muted-foreground">{schema.description}</p>
+        )}
+
+        {schema.fields.map((field) => (
+          <div key={field.name}>{renderField(field.name, field)}</div>
+        ))}
+
+        <Button type="submit" disabled={pending}>
+          {pending ? "Submitting..." : "Submit"}
+        </Button>
+      </form>
+    </Form>
   );
 };
