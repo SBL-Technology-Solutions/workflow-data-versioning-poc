@@ -30,10 +30,9 @@ export async function createWorkflowVersion(name: string, machineConfig: any) {
 }
 
 export async function createFormVersion(
-  workflowDefId: string,
+  workflowDefId: number,
   state: string,
-  schema: any,
-  uiSchema: any
+  schema: any
 ) {
   const currentVersion = await db
     .select()
@@ -54,13 +53,12 @@ export async function createFormVersion(
     state,
     version: nextVersion,
     schema,
-    uiSchema,
   });
 }
 
 export async function createDataVersion(
-  workflowInstanceId: string,
-  formDefId: string,
+  workflowInstanceId: number,
+  formDefId: number,
   data: any,
   previousVersion?: number
 ) {
@@ -92,7 +90,7 @@ export async function createDataVersion(
 }
 
 export async function compareVersions(
-  instanceId: string,
+  instanceId: number,
   version1: number,
   version2: number
 ) {
@@ -119,7 +117,7 @@ export async function compareVersions(
   };
 }
 
-export async function getWorkflowInstance(id: string) {
+export async function getWorkflowInstance(id: number) {
   const result = await db
     .select({
       id: workflowInstances.id,
@@ -151,7 +149,7 @@ export async function getWorkflowInstance(id: string) {
 }
 
 export async function getCurrentForm(
-  workflowInstanceId: string,
+  workflowInstanceId: number,
   state: string
 ) {
   // Get the workflow instance to find the workflow definition ID
@@ -188,7 +186,7 @@ export async function getCurrentForm(
   return result[0];
 }
 
-export async function updateWorkflowState(id: string, newState: string) {
+export async function updateWorkflowState(id: number, newState: string) {
   return await db
     .update(workflowInstances)
     .set({

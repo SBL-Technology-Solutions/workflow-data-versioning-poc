@@ -4,9 +4,9 @@ import {
   integer,
   jsonb,
   pgTable,
-  text,
+  serial,
   timestamp,
-  uuid,
+  varchar,
 } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
@@ -14,45 +14,54 @@ type FormSchemaType = z.infer<typeof FormSchema>;
 
 // Workflow Definitions
 export const workflowDefinitions = pgTable("workflow_definitions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
+  id: serial("id").primaryKey(),
+  name: varchar("name").notNull(),
   version: integer("version").notNull(),
   machineConfig: jsonb("machine_config").notNull(), // XState machine configuration
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .$onUpdateFn(() => new Date()),
 });
 
 // Form Schemas
 export const formDefinitions = pgTable("form_definitions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  workflowDefId: uuid("workflow_def_id").references(
+  id: serial("id").primaryKey(),
+  workflowDefId: serial("workflow_def_id").references(
     () => workflowDefinitions.id
   ),
-  state: text("state").notNull(), // corresponds to XState state
+  state: varchar("state").notNull(), // corresponds to XState state
   version: integer("version").notNull(),
   schema: jsonb("schema").$type<FormSchemaType>().notNull(), // Zod schema stored as JSON
-  createdAt: timestamp("created_at").defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .defaultNow()
+    .$onUpdateFn(() => new Date()),
 });
 
 // Workflow Instances
 export const workflowInstances = pgTable("workflow_instances", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  workflowDefId: uuid("workflow_def_id").references(
+  id: serial("id").primaryKey(),
+  workflowDefId: serial("workflow_def_id").references(
     () => workflowDefinitions.id
   ),
-  currentState: text("current_state").notNull(),
-  status: text("status").notNull(), // active, completed, suspended
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
+  currentState: varchar("current_state").notNull(),
+  status: varchar("status").notNull(), // active, completed, suspended
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+    .notNull()
+    .defaultNow()
+    .$onUpdateFn(() => new Date()),
 });
 
 // Form Data Versions
 export const formDataVersions = pgTable("form_data_versions", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  workflowInstanceId: uuid("workflow_instance_id").references(
+  id: serial("id").primaryKey(),
+  workflowInstanceId: serial("workflow_instance_id").references(
     () => workflowInstances.id
   ),
-  formDefId: uuid("form_def_id").references(() => formDefinitions.id),
+  formDefId: serial("form_def_id").references(() => formDefinitions.id),
   version: integer("version").notNull(),
   data: jsonb("data").$type<Record<string, any>>().notNull(),
   patch: jsonb("patch")
@@ -64,8 +73,8 @@ export const formDataVersions = pgTable("form_data_versions", {
       }>
     >()
     .notNull(), // JSON Patch showing changes from previous version
-  createdAt: timestamp("created_at").defaultNow(),
-  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  createdBy: varchar("created_by").notNull(),
 });
 
 export const workflowDefinitionsRelations = relations(
