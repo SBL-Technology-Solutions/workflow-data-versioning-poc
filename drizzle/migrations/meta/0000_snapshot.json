@@ -1,4 +1,6 @@
 {
+  "id": "5740cda5-544e-459b-8c37-cf6f25794898",
+  "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -14,15 +16,15 @@
         },
         "workflow_instance_id": {
           "name": "workflow_instance_id",
-          "type": "uuid",
+          "type": "serial",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "form_def_id": {
           "name": "form_def_id",
-          "type": "integer",
+          "type": "serial",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "version": {
           "name": "version",
@@ -46,12 +48,12 @@
           "name": "created_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "now()"
         },
         "created_by": {
           "name": "created_by",
-          "type": "text",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         }
@@ -61,35 +63,35 @@
         "form_data_versions_workflow_instance_id_workflow_instances_id_fk": {
           "name": "form_data_versions_workflow_instance_id_workflow_instances_id_fk",
           "tableFrom": "form_data_versions",
+          "tableTo": "workflow_instances",
           "columnsFrom": [
             "workflow_instance_id"
           ],
-          "tableTo": "workflow_instances",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         },
         "form_data_versions_form_def_id_form_definitions_id_fk": {
           "name": "form_data_versions_form_def_id_form_definitions_id_fk",
           "tableFrom": "form_data_versions",
+          "tableTo": "form_definitions",
           "columnsFrom": [
             "form_def_id"
           ],
-          "tableTo": "form_definitions",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.form_definitions": {
       "name": "form_definitions",
@@ -103,13 +105,13 @@
         },
         "workflow_def_id": {
           "name": "workflow_def_id",
-          "type": "integer",
+          "type": "serial",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "state": {
           "name": "state",
-          "type": "text",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
@@ -125,17 +127,18 @@
           "primaryKey": false,
           "notNull": true
         },
-        "ui_schema": {
-          "name": "ui_schema",
-          "type": "jsonb",
-          "primaryKey": false,
-          "notNull": true
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
           "default": "now()"
         }
       },
@@ -144,22 +147,22 @@
         "form_definitions_workflow_def_id_workflow_definitions_id_fk": {
           "name": "form_definitions_workflow_def_id_workflow_definitions_id_fk",
           "tableFrom": "form_definitions",
+          "tableTo": "workflow_definitions",
           "columnsFrom": [
             "workflow_def_id"
           ],
-          "tableTo": "workflow_definitions",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.workflow_definitions": {
       "name": "workflow_definitions",
@@ -173,7 +176,7 @@
         },
         "name": {
           "name": "name",
-          "type": "text",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
@@ -193,15 +196,14 @@
           "name": "created_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
-          "default": "now()"
+          "notNull": true
         }
       },
       "indexes": {},
@@ -209,8 +211,8 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     },
     "public.workflow_instances": {
       "name": "workflow_instances",
@@ -218,26 +220,25 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "serial",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "workflow_def_id": {
           "name": "workflow_def_id",
-          "type": "integer",
+          "type": "serial",
           "primaryKey": false,
-          "notNull": false
+          "notNull": true
         },
         "current_state": {
           "name": "current_state",
-          "type": "text",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
         "status": {
           "name": "status",
-          "type": "text",
+          "type": "varchar",
           "primaryKey": false,
           "notNull": true
         },
@@ -245,14 +246,14 @@
           "name": "created_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "now()"
         }
       },
@@ -261,35 +262,33 @@
         "workflow_instances_workflow_def_id_workflow_definitions_id_fk": {
           "name": "workflow_instances_workflow_def_id_workflow_definitions_id_fk",
           "tableFrom": "workflow_instances",
+          "tableTo": "workflow_definitions",
           "columnsFrom": [
             "workflow_def_id"
           ],
-          "tableTo": "workflow_definitions",
           "columnsTo": [
             "id"
           ],
-          "onUpdate": "no action",
-          "onDelete": "no action"
+          "onDelete": "no action",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},
-      "isRLSEnabled": false,
-      "checkConstraints": {}
+      "checkConstraints": {},
+      "isRLSEnabled": false
     }
   },
   "enums": {},
   "schemas": {},
-  "_meta": {
-    "schemas": {},
-    "tables": {},
-    "columns": {}
-  },
-  "id": "a86c8ab1-ef2d-4d24-9dd0-31b6350bbc63",
-  "prevId": "00000000-0000-0000-0000-000000000000",
   "sequences": {},
+  "roles": {},
   "policies": {},
   "views": {},
-  "roles": {}
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
 }
