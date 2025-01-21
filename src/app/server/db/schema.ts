@@ -1,10 +1,11 @@
 import { FormSchema } from "@/lib/types/form";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   integer,
   jsonb,
   pgTable,
   serial,
+  text,
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -17,7 +18,10 @@ export const workflowDefinitions = pgTable("workflow_definitions", {
   id: serial("id").primaryKey(),
   name: varchar("name").notNull(),
   version: integer("version").notNull(),
-  machineConfig: jsonb("machine_config").notNull(), // XState machine configuration
+  machineConfig: jsonb("machine_config").$type<Record<string, any>>().notNull(),
+  states: text("states")
+    .array()
+    .generatedAlwaysAs(() => sql`states_keys(machine_config->'states')`),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at")
     .notNull()

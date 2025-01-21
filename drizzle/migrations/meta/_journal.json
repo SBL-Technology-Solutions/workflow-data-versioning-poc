@@ -8,6 +8,20 @@
       "when": 1737346522299,
       "tag": "0000_gigantic_la_nuit",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1737431252124,
+      "tag": "0001_jsonb_machineconfig_states",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1737432476135,
+      "tag": "0002_strong_kingpin",
+      "breakpoints": true
     }
   ]
 }

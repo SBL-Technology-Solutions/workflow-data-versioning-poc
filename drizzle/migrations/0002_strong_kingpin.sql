@@ -1,0 +1,1 @@
+ALTER TABLE "workflow_definitions" ADD COLUMN "states" text[] GENERATED ALWAYS AS (states_keys(machine_config->'states')) STORED;
