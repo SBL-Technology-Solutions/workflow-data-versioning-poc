@@ -45,7 +45,7 @@ export const FormSchema = z.object({
 export type FormSchema = z.infer<typeof FormSchema>;
 
 // Helper to create the runtime validation schema for react-hook-form
-export function createFormValidationSchema(form: FormSchema) {
+export function createZodValidationSchema(form: FormSchema) {
   const shape: Record<string, z.ZodType> = {};
 
   for (const field of form.fields) {

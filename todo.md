@@ -26,6 +26,8 @@ Dynamic Forms and Schema Versioning
   - [ ] Implement form data versioning and diffs
   - [x] Add form validation and error handling
   - [ ] Create form builder/editor UI for admins
+    - [ ] Submitting form is not yet working
+    - [ ] changing states for workflow is not working as expected and the form is not re-rendering when route changes
 
 - [ ] Implement approval workflow
 

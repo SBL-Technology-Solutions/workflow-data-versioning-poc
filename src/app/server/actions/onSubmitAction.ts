@@ -1,6 +1,6 @@
 "use server";
 
-import { createFormValidationSchema, type FormSchema } from "@/lib/types/form";
+import { createZodValidationSchema, type FormSchema } from "@/lib/types/form";
 
 export type FormState = {
   success: boolean;
@@ -39,7 +39,7 @@ export const onSubmitAction = async (
     const data = Object.fromEntries(formData.entries());
 
     // Generate the validation schema and validate the data
-    const validationSchema = createFormValidationSchema(schema);
+    const validationSchema = createZodValidationSchema(schema);
     const parsed = validationSchema.safeParse(data);
 
     if (!parsed.success) {

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { createFormValidationSchema, type FormSchema } from "@/lib/types/form";
+import { createZodValidationSchema, type FormSchema } from "@/lib/types/form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { startTransition, useActionState, useRef } from "react";
 import { useForm } from "react-hook-form";
@@ -29,7 +29,7 @@ export const DynamicForm = ({
   initialData,
   action,
 }: DynamicFormProps) => {
-  const validationSchema = createFormValidationSchema(schema);
+  const validationSchema = createZodValidationSchema(schema);
 
   // Create initial data if not provided
   const defaultInitialData = schema.fields.reduce<Record<string, string>>(

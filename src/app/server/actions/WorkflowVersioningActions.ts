@@ -1,5 +1,6 @@
 "use server";
 
+import { FormSchema } from "@/lib/types/form";
 import { and, desc, eq, or } from "drizzle-orm";
 import { createJSONPatch } from "../../../lib/utils/jsonPatch";
 import { db } from "../db";
@@ -32,7 +33,7 @@ export async function createWorkflowVersion(name: string, machineConfig: any) {
 export async function createFormVersion(
   workflowDefId: number,
   state: string,
-  schema: any
+  schema: FormSchema
 ) {
   const currentVersion = await db
     .select()
