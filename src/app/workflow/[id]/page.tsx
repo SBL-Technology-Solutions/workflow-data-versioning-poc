@@ -1,7 +1,4 @@
-import {
-  FormState,
-  onSubmitAction,
-} from "@/app/server/actions/onSubmitActionChatGPT";
+import { FormState, onSubmitAction } from "@/app/server/actions/onSubmitAction";
 import { createDataVersion } from "@/app/server/actions/WorkflowVersioningActions";
 import { getCurrentForm } from "@/app/server/queries/getCurrentForm";
 import { getLatestCurrentFormData } from "@/app/server/queries/getLatestCurrentFormData";
