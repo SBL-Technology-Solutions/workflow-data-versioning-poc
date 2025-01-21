@@ -40,7 +40,15 @@ export default async function Home() {
         </h2>
         {workflows.map((wf) => (
           <div key={wf.id} className="mb-4 p-4 border rounded">
-            <div>ID: {wf.id}</div>
+            <div>
+              ID:{" "}
+              <Link
+                href={`/admin/workflow/${wf.id}/forms`}
+                className="text-blue-500 hover:underline"
+              >
+                {wf.id}
+              </Link>
+            </div>
             <div>Name: {wf.name}</div>
             <div>Version: {wf.version}</div>
             <div>
