@@ -15,6 +15,8 @@ export default async function WorkflowFormAdminPage({
 }) {
   const { id } = await params;
   const { state } = await searchParams;
+  console.log("state", state);
+
   const workflowId = parseInt(id);
   const workflow = await getWorkflowDefinition(workflowId);
 
@@ -23,8 +25,12 @@ export default async function WorkflowFormAdminPage({
   }
 
   const states = Object.keys(workflow.machineConfig.states);
+
   const currentState = state || states[0];
+  console.log("currentState", currentState);
+
   const currentForm = await getCurrentFormDefinition(workflowId, currentState);
+  console.log("currentForm", currentForm);
 
   return (
     <div className="container mx-auto p-4">
