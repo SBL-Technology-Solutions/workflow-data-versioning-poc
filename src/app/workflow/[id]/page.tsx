@@ -1,57 +1,81 @@
-import { getCurrentFormDefinition } from "@/app/server/queries/getCurrentFormDefinition";
-import { getWorkflowDefinition } from "@/app/server/queries/getWorkflowDefinition";
-import { FormBuilder } from "@/components/admin/FormBuilder";
-// import { stateSearchParamsLoader } from "@/components/admin/StateSearchParams";
-import { StateSelector } from "@/components/admin/StateSelector";
+import { FormState, onSubmitAction } from "@/app/server/actions/onSubmitAction";
+import { createDataVersion } from "@/app/server/actions/WorkflowVersioningActions";
+import { getCurrentForm } from "@/app/server/queries/getCurrentForm";
+import { getLatestCurrentFormData } from "@/app/server/queries/getLatestCurrentFormData";
+import { getWorkflowInstance } from "@/app/server/queries/getWorkflowInstance";
+import { DynamicForm } from "@/components/DynamicForm";
+import { revalidatePath } from "next/cache";
 import Link from "next/link";
 
-export const dynamic = "force-dynamic";
+async function submitFormAction(
+  data: Record<string, any>,
+  workflowInstanceId: number,
+  formId: number
+) {
+  "use server";
 
-export default async function WorkflowFormAdminPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string };
-  searchParams: { state?: string };
-}) {
+  await createDataVersion(workflowInstanceId, formId, data);
+  revalidatePath(`/workflow/${workflowInstanceId}`);
+}
+
+const WorkflowPage = async ({ params }: { params: { id: string } }) => {
   const { id } = await params;
-  const { state } = await searchParams;
-  //TODO: this is not updating yet and the page is not re-rendering when the url searchParams change
-  console.log("state", state);
-  const workflowId = parseInt(id);
-  const workflow = await getWorkflowDefinition(workflowId);
-
+  const workflowInstanceId = parseInt(id);
+  const workflow = await getWorkflowInstance(workflowInstanceId);
   if (!workflow) {
-    return <div>Workflow not found</div>;
+    return <div>No workflow found</div>;
   }
 
-  const states = Object.keys(workflow.machineConfig.states);
-  const currentState = state || states[0];
-  console.log("currentState", currentState);
-  
-  const currentForm = await getCurrentFormDefinition(workflowId, currentState);
-  console.log("currentForm", currentForm);
+  console.log("workflow: ", workflow);
+  const currentForm = await getCurrentForm(
+    workflowInstanceId,
+    workflow.currentState
+  );
+
+  if (!currentForm.formId) {
+    return <div>No form found</div>;
+  }
+
+  console.log("currentForm: ", currentForm);
+
+  const latestFormData = await getLatestCurrentFormData(
+    workflowInstanceId,
+    currentForm.formId
+  );
+
+  console.log("latestFormData: ", latestFormData);
+
+  const handleSubmit = async (prevState: FormState, formData: FormData) => {
+    "use server";
+    return onSubmitAction(
+      prevState,
+      formData,
+      currentForm.schema!,
+      submitFormAction,
+      workflowInstanceId,
+      currentForm.formId
+    );
+  };
 
   return (
     <div className="container mx-auto p-4">
-      <div className="flex justify-between items-center mb-6">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold">Edit Form: {workflow.name}</h1>
-          <StateSelector states={states} defaultState={currentState} />
-        </div>
-        <Link
-          href="/admin/workflows"
-          className="text-blue-500 hover:text-blue-700"
-        >
-          Back to Workflows
-        </Link>
-      </div>
+      <Link href="/" className="text-blue-500 hover:underline mb-4 block">
+        &larr; Back to Home
+      </Link>
 
-      <FormBuilder
-        initialSchema={currentForm?.schema}
-        workflowId={workflowId}
-        state={currentState}
-      />
+      <h1 className="text-2xl font-bold mb-4">
+        Workflow Step: {workflow.currentState}
+      </h1>
+
+      {currentForm.schema && (
+        <DynamicForm
+          schema={currentForm.schema}
+          initialData={latestFormData[0]?.data}
+          action={handleSubmit}
+        />
+      )}
     </div>
   );
-}
+};
+
+export default WorkflowPage;

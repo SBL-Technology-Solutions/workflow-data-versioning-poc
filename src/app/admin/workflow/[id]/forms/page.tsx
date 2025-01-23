@@ -1,6 +1,8 @@
+
 import { getCurrentFormDefinition } from "@/app/server/queries/getCurrentFormDefinition";
 import { getWorkflowDefinition } from "@/app/server/queries/getWorkflowDefinition";
 import { FormBuilder } from "@/components/admin/FormBuilder";
+// import { stateSearchParamsLoader } from "@/components/admin/StateSearchParams";
 import { StateSelector } from "@/components/admin/StateSelector";
 import Link from "next/link";
 
@@ -15,8 +17,8 @@ export default async function WorkflowFormAdminPage({
 }) {
   const { id } = await params;
   const { state } = await searchParams;
+  //TODO: this is not updating yet and the page is not re-rendering when the url searchParams change
   console.log("state", state);
-
   const workflowId = parseInt(id);
   const workflow = await getWorkflowDefinition(workflowId);
 
@@ -25,10 +27,8 @@ export default async function WorkflowFormAdminPage({
   }
 
   const states = Object.keys(workflow.machineConfig.states);
-
   const currentState = state || states[0];
   console.log("currentState", currentState);
-
   const currentForm = await getCurrentFormDefinition(workflowId, currentState);
   console.log("currentForm", currentForm);
 
@@ -37,7 +37,7 @@ export default async function WorkflowFormAdminPage({
       <div className="flex justify-between items-center mb-6">
         <div className="space-y-2">
           <h1 className="text-2xl font-bold">Edit Form: {workflow.name}</h1>
-          <StateSelector states={states} defaultState={currentState} workflowId={workflowId} />
+          <StateSelector states={states} defaultState={currentState} />
         </div>
         <Link
           href="/admin/workflows"
