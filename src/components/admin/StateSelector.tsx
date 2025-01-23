@@ -1,28 +1,52 @@
 "use client";
 
-import React from 'react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useQueryState } from "nuqs";
 
 interface StateSelectorProps {
   states: string[];
   defaultState: string;
-  workflowId: number;
 }
 
-export const StateSelector: React.FC<StateSelectorProps> = ({ states, defaultState, workflowId }) => {
+export const StateSelector = ({ states, defaultState }: StateSelectorProps) => {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [state, setState] = useQueryState("state", {
+    defaultValue: defaultState,
+    parse: (value) => value,
+    serialize: (value) => value,
+  });
+
+  const handleStateChange = (newState: string) => {
+    setState(newState);
+    const params = new URLSearchParams(searchParams);
+    params.set("state", newState);
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
   return (
-    <select
-      value={defaultState}
-      onChange={(event) => {
-        const selectedState = event.target.value;
-        window.location.href = `/admin/workflow/${workflowId}/forms?state=${selectedState}`;
-      }}
-      className="border p-2 rounded"
-    >
-      {states.map((state) => (
-        <option key={state} value={state}>
-          {state}
-        </option>
-      ))}
-    </select>
+    <div className="flex items-center gap-2 py-6">
+      <span className="text-muted-foreground">State:</span>
+      <Select value={state} onValueChange={handleStateChange}>
+        <SelectTrigger className="w-[180px]">
+          <SelectValue placeholder="Select state" />
+        </SelectTrigger>
+        <SelectContent>
+          {states.map((stateOption) => (
+            <SelectItem key={stateOption} value={stateOption}>
+              {stateOption}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </div>
   );
 };
