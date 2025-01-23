@@ -8,7 +8,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { useQueryState } from "nuqs";
 
 interface StateSelectorProps {
   states: string[];
@@ -19,14 +18,9 @@ export const StateSelector = ({ states, defaultState }: StateSelectorProps) => {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [state, setState] = useQueryState("state", {
-    defaultValue: defaultState,
-    parse: (value) => value,
-    serialize: (value) => value,
-  });
+  const state = searchParams.get("state") || defaultState;
 
   const handleStateChange = (newState: string) => {
-    setState(newState);
     const params = new URLSearchParams(searchParams);
     params.set("state", newState);
     router.push(`${pathname}?${params.toString()}`);
