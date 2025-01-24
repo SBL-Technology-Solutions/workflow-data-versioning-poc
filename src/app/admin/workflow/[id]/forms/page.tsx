@@ -4,20 +4,25 @@ import { FormBuilder } from "@/components/admin/FormBuilder";
 // import { stateSearchParamsLoader } from "@/components/admin/StateSearchParams";
 import { StateSelector } from "@/components/admin/StateSelector";
 import Link from "next/link";
+import { SearchParams } from "nuqs/server";
+import { loadSearchParams } from "./searchParams";
 
 export const dynamic = "force-dynamic";
+
+type PageProps = {
+  params: { id: string };
+  searchParams: Promise<SearchParams>
+}
 
 export default async function WorkflowFormAdminPage({
   params,
   searchParams,
-}: {
-  params: { id: string };
-  searchParams: { state?: string };
-}) {
+}: PageProps) {
+    
   const { id } = await params;
-  const { state } = await searchParams;
-  //TODO: this is not updating yet and the page is not re-rendering when the url searchParams change
+  const { state } = await loadSearchParams(searchParams);
   console.log("state", state);
+
   const workflowId = parseInt(id);
   const workflow = await getWorkflowDefinition(workflowId);
 
@@ -28,6 +33,7 @@ export default async function WorkflowFormAdminPage({
   const states = Object.keys(workflow.machineConfig.states);
   const currentState = state || states[0];
   console.log("currentState", currentState);
+  
   const currentForm = await getCurrentFormDefinition(workflowId, currentState);
   console.log("currentForm", currentForm);
 

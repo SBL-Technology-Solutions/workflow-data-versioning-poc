@@ -36,9 +36,6 @@ export function FormBuilder({
   workflowId,
   state,
 }: FormBuilderProps) {
-  console.log('formbuilder initialSchema', initialSchema);
-  console.log('formbuilder state', state);
-
   const form = useForm<FormSchema>({
     defaultValues: initialSchema || {
       title: "",
