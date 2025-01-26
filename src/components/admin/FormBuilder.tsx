@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FormFieldType, FormSchema, type FormField } from "@/lib/types/form";
-import { useEffect } from "react";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -21,6 +21,7 @@ interface FormBuilderProps {
   initialSchema: FormSchema;
   workflowId: number;
   state: string;
+  key: number;
 }
 
 const defaultField: FormField = {
@@ -42,6 +43,8 @@ export function FormBuilder({
       description: "",
       fields: [],
     },
+    resolver: zodResolver(FormSchema),
+    mode: "onTouched",
   });
 
   const { fields, append, remove } = useFieldArray({
@@ -49,10 +52,7 @@ export function FormBuilder({
     name: "fields",
   });
 
-  // Use useEffect to reset form values when initialSchema changes
-  useEffect(() => {
-    form.reset(initialSchema);
-  }, [initialSchema, form]);
+  console.log("form.formState.errors", form.formState.errors);
 
   async function onSubmit(data: FormSchema) {
     try {

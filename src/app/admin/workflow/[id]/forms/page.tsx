@@ -11,14 +11,13 @@ export const dynamic = "force-dynamic";
 
 type PageProps = {
   params: { id: string };
-  searchParams: Promise<SearchParams>
-}
+  searchParams: Promise<SearchParams>;
+};
 
 export default async function WorkflowFormAdminPage({
   params,
   searchParams,
 }: PageProps) {
-    
   const { id } = await params;
   const { state } = await loadSearchParams(searchParams);
   console.log("state", state);
@@ -33,7 +32,7 @@ export default async function WorkflowFormAdminPage({
   const states = Object.keys(workflow.machineConfig.states);
   const currentState = state || states[0];
   console.log("currentState", currentState);
-  
+
   const currentForm = await getCurrentFormDefinition(workflowId, currentState);
   console.log("currentForm", currentForm);
 
@@ -56,6 +55,7 @@ export default async function WorkflowFormAdminPage({
         initialSchema={currentForm?.schema}
         workflowId={workflowId}
         state={currentState}
+        key={currentForm?.id}
       />
     </div>
   );
