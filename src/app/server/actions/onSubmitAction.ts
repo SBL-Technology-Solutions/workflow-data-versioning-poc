@@ -1,6 +1,6 @@
 "use server";
 
-import { createZodValidationSchema, type FormSchema } from "@/lib/types/form";
+import { createZodValidationSchema, FormSchema } from "@/lib/types/form";
 
 export type FormState = {
   success: boolean;
@@ -23,6 +23,7 @@ export const onSubmitAction = async (
   prevState: FormState,
   formData: FormData,
   schema: FormSchema,
+  useZodValidationBuilder: boolean = false,
   action: (data: Record<string, any>, ...args: any[]) => Promise<any>,
   ...actionParams: any[] // Additional parameters for the action
 ): Promise<FormState> => {
@@ -35,11 +36,20 @@ export const onSubmitAction = async (
       };
     }
 
+    console.log("formData in onSubmitAction", formData);
+
     // Transform formData into a plain object
     const data = Object.fromEntries(formData.entries());
+    console.log("data in onSubmitAction", data);
 
+    if (data.fields) {
+      data.fields = JSON.parse(data.fields as string);
+    }
+    console.log("data in onSubmitAction after parsing fields", data);
     // Generate the validation schema and validate the data
-    const validationSchema = createZodValidationSchema(schema);
+    const validationSchema = useZodValidationBuilder
+      ? createZodValidationSchema(schema)
+      : FormSchema;
     const parsed = validationSchema.safeParse(data);
 
     if (!parsed.success) {
@@ -55,16 +65,18 @@ export const onSubmitAction = async (
         success: false,
         fields,
         errors,
+        message: "Form submission failed: Schema validation errors",
       };
     }
 
     // Execute the provided action with the parsed data and additional parameters
     await action(parsed.data, ...actionParams);
+    console.log("form submitted successfully");
 
     return {
       success: true,
       message: "Form submitted successfully",
-      fields: parsed.data,
+      // fields: parsed.data,
     };
   } catch (error: any) {
     console.error("Error in onSubmitAction:", error);

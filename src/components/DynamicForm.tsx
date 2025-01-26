@@ -42,12 +42,12 @@ export const DynamicForm = ({
   console.log("initialData: ", initialData);
   console.log("defaultInitialData: ", defaultInitialData);
 
-  const [formState, formAction, pending] = useActionState<FormState, FormData>(
-    action,
-    {
-      success: false,
-    }
-  );
+  const [formState, formAction, isPending] = useActionState<
+    FormState,
+    FormData
+  >(action, {
+    success: false,
+  });
 
   const effectiveInitialData =
     initialData ?? formState?.fields ?? defaultInitialData;
@@ -78,7 +78,7 @@ export const DynamicForm = ({
             {field.type === "textarea" ? (
               <Textarea
                 {...formField}
-                disabled={pending}
+                disabled={isPending}
                 rows={field.rows}
                 placeholder={field.description}
               />
@@ -86,7 +86,7 @@ export const DynamicForm = ({
               <Input
                 {...formField}
                 type={field.type}
-                disabled={pending}
+                disabled={isPending}
                 placeholder={field.description}
               />
             )}
@@ -141,8 +141,8 @@ export const DynamicForm = ({
           <div key={field.name}>{renderField(field.name, field)}</div>
         ))}
 
-        <Button type="submit" disabled={pending}>
-          {pending ? "Submitting..." : "Submit"}
+        <Button type="submit" disabled={isPending}>
+          {isPending ? "Submitting..." : "Submit"}
         </Button>
       </form>
     </Form>

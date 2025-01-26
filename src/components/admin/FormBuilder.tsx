@@ -1,6 +1,6 @@
 "use client";
 
-import { createFormVersion } from "@/app/server/actions/WorkflowVersioningActions";
+import { FormState } from "@/app/server/actions/onSubmitAction";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/select";
 import { FormSchema, type FormFieldSchema } from "@/lib/types/form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { startTransition, useActionState, useEffect, useRef } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 import { toast } from "sonner";
 
@@ -29,6 +30,7 @@ interface FormBuilderProps {
   workflowId: number;
   state: string;
   key: number;
+  action: (prevState: FormState, formData: FormData) => Promise<FormState>;
 }
 
 const defaultField: FormFieldSchema = {
@@ -39,11 +41,7 @@ const defaultField: FormFieldSchema = {
   description: "",
 };
 
-export function FormBuilder({
-  initialSchema,
-  workflowId,
-  state,
-}: FormBuilderProps) {
+export function FormBuilder({ initialSchema, action }: FormBuilderProps) {
   const form = useForm<FormSchema>({
     defaultValues: initialSchema || {
       title: "",
@@ -59,19 +57,64 @@ export function FormBuilder({
     name: "fields",
   });
 
-  async function onSubmit(data: FormSchema) {
-    try {
-      await createFormVersion(workflowId, state, data);
-      toast.success("Form definition saved successfully");
-    } catch (error) {
-      toast.error("Failed to save form definition");
-      console.error("Failed to save form:", error);
+  const [formState, formAction, isPending] = useActionState<
+    FormState,
+    FormData
+  >(action, {
+    success: false,
+  });
+
+  console.log("formState", formState);
+
+  const formRef = useRef<HTMLFormElement>(null);
+
+  useEffect(() => {
+    if (isPending || !formState) {
+      return;
     }
-  }
+
+    if (formState.success) {
+      // Successfully submitted the form
+      toast.success(formState.message);
+    } else if (formState.errors) {
+      // There was a server-side error
+      toast.error(formState.message);
+    }
+  }, [formState, isPending]);
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 mt-4">
+      {formState.message !== "" && !formState?.errors && (
+        <div className="text-destructive">
+          <p>{formState.message}</p>
+        </div>
+      )}
+      {formState?.errors && (
+        <div>
+          <ul>
+            {Object.entries(formState.errors).map(([key, value]) => (
+              <li key={key} className="flex gap-1 text-destructive">
+                {key}: {value?.join(", ")}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      <form
+        ref={formRef}
+        action={formAction}
+        onSubmit={(evt) => {
+          evt.preventDefault();
+          form.handleSubmit(() => {
+            const formData = new FormData(formRef.current!);
+            // Add the fields array as a single entry
+            formData.append("fields", JSON.stringify(form.getValues("fields")));
+            console.log("formData in handleSubmit", formData);
+            startTransition(() => formAction(formData));
+          })(evt);
+        }}
+        className="space-y-6 mt-4"
+      >
         <Card>
           <CardHeader>
             <CardTitle>Form Details</CardTitle>
@@ -220,7 +263,9 @@ export function FormBuilder({
           >
             Add Field
           </Button>
-          <Button type="submit">Save Form</Button>
+          <Button type="submit" disabled={isPending}>
+            {isPending ? "Submitting..." : "Submit"}
+          </Button>
         </div>
       </form>
     </Form>

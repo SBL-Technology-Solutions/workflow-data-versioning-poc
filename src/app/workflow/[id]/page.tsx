@@ -51,6 +51,7 @@ const WorkflowPage = async ({ params }: { params: { id: string } }) => {
       prevState,
       formData,
       currentForm.schema!,
+      true,
       submitFormAction,
       workflowInstanceId,
       currentForm.formId
