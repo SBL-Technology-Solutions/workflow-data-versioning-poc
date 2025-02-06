@@ -3,13 +3,13 @@
 import { FormSchema } from "@/lib/types/form";
 import { and, desc, eq, or } from "drizzle-orm";
 import { createJSONPatch } from "@/lib/utils/jsonPatch";
-import { db } from "@/app/server/db";
+import { db } from "@/db";
 import {
   formDataVersions,
   formDefinitions,
   workflowDefinitions,
   workflowInstances,
-} from "../server/db/schema";
+} from "../../db/schema";
 
 export async function createWorkflowVersion(name: string, machineConfig: any) {
   // Get current version number

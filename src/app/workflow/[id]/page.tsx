@@ -1,8 +1,8 @@
 import { FormState, onSubmitAction } from "@/app/actions/onSubmitAction";
 import { createDataVersion } from "@/app/actions/WorkflowVersioningActions";
-import { getCurrentForm } from "@/app/server/queries/getCurrentForm";
-import { getLatestCurrentFormData } from "@/app/server/queries/getLatestCurrentFormData";
-import { getWorkflowInstance } from "@/app/server/queries/getWorkflowInstance";
+import { getCurrentForm } from "@/lib/queries/getCurrentForm";
+import { getLatestCurrentFormData } from "@/lib/queries/getLatestCurrentFormData";
+import { getWorkflowInstance } from "@/lib/queries/getWorkflowInstance";
 import { DynamicForm } from "@/components/DynamicForm";
 import { revalidatePath } from "next/cache";
 import Link from "next/link";

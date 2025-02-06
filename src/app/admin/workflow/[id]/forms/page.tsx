@@ -1,5 +1,5 @@
-import { getCurrentFormDefinition } from "@/app/server/queries/getCurrentFormDefinition";
-import { getWorkflowDefinition } from "@/app/server/queries/getWorkflowDefinition";
+import { getCurrentFormDefinition } from "@/lib/queries/getCurrentFormDefinition";
+import { getWorkflowDefinition } from "@/lib/queries/getWorkflowDefinition";
 import { FormBuilder } from "@/components/admin/FormBuilder";
 // import { stateSearchParamsLoader } from "@/components/admin/StateSearchParams";
 import { StateSelector } from "@/components/admin/StateSelector";

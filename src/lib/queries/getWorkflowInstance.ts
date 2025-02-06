@@ -1,7 +1,7 @@
 "use server";
 import { eq } from "drizzle-orm";
-import { db } from "../db";
-import { workflowDefinitions, workflowInstances } from "../db/schema";
+import { db } from "../../db";
+import { workflowDefinitions, workflowInstances } from "../../db/schema";
 
 export async function getWorkflowInstance(id: number) {
   const result = await db

@@ -1,9 +1,9 @@
-import { db } from "@/app/server/db";
+import { db } from "@/db";
 import {
   formDefinitions,
   workflowDefinitions,
   workflowInstances,
-} from "@/app/server/db/schema";
+} from "@/db/schema";
 import { FormSchema } from "@/lib/types/form";
 
 async function seed() {
