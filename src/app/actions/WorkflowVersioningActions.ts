@@ -2,14 +2,14 @@
 
 import { FormSchema } from "@/lib/types/form";
 import { and, desc, eq, or } from "drizzle-orm";
-import { createJSONPatch } from "../../../lib/utils/jsonPatch";
-import { db } from "../db";
+import { createJSONPatch } from "@/lib/utils/jsonPatch";
+import { db } from "@/app/server/db";
 import {
   formDataVersions,
   formDefinitions,
   workflowDefinitions,
   workflowInstances,
-} from "../db/schema";
+} from "../server/db/schema";
 
 export async function createWorkflowVersion(name: string, machineConfig: any) {
   // Get current version number
@@ -34,7 +34,7 @@ export async function createFormVersion(
   workflowDefId: number,
   state: string,
   schema: FormSchema
-) {
+): Promise<{ id: number }> {
   const currentVersion = await db
     .select()
     .from(formDefinitions)
@@ -49,12 +49,16 @@ export async function createFormVersion(
 
   const nextVersion = currentVersion.length ? currentVersion[0].version + 1 : 1;
 
-  return await db.insert(formDefinitions).values({
+  const result = await db.insert(formDefinitions).values({
     workflowDefId,
     state,
     version: nextVersion,
     schema,
-  });
+  }).returning({ id: formDefinitions.id });
+
+  console.log("result: ", result);
+
+  return { id: result[0].id };
 }
 
 export async function createDataVersion(

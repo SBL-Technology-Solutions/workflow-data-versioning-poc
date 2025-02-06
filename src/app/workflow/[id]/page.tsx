@@ -1,5 +1,5 @@
-import { FormState, onSubmitAction } from "@/app/server/actions/onSubmitAction";
-import { createDataVersion } from "@/app/server/actions/WorkflowVersioningActions";
+import { FormState, onSubmitAction } from "@/app/actions/onSubmitAction";
+import { createDataVersion } from "@/app/actions/WorkflowVersioningActions";
 import { getCurrentForm } from "@/app/server/queries/getCurrentForm";
 import { getLatestCurrentFormData } from "@/app/server/queries/getLatestCurrentFormData";
 import { getWorkflowInstance } from "@/app/server/queries/getWorkflowInstance";

@@ -1,6 +1,6 @@
 "use client";
 
-import { createFormVersion } from "@/app/server/actions/WorkflowVersioningActions";
+import { createFormVersion } from "@/app/actions/WorkflowVersioningActions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
