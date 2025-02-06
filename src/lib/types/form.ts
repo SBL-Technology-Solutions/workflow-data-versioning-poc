@@ -6,9 +6,12 @@ export type FormFieldType = z.infer<typeof FormFieldType>;
 
 // Base schema for all field types
 const BaseFieldSchema = z.object({
-  name: z.string(),
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .regex(/^\S*$/, "Name cannot contain spaces"),
   type: FormFieldType,
-  label: z.string(),
+  label: z.string().min(1, "Label is required"),
   required: z.boolean().default(false),
   description: z.string().optional(),
 });
@@ -34,13 +37,13 @@ export const FormFieldSchema = z.discriminatedUnion("type", [
   TextFieldSchema,
   TextareaFieldSchema,
 ]);
-export type FormField = z.infer<typeof FormFieldSchema>;
+export type FormFieldSchema = z.infer<typeof FormFieldSchema>;
 
 // The complete form schema definition (metadata)
 export const FormSchema = z.object({
-  title: z.string(),
+  title: z.string().min(1, "Title is required"),
   description: z.string().optional(),
-  fields: z.array(FormFieldSchema),
+  fields: z.array(FormFieldSchema).min(1, "At least one field is required"),
 });
 export type FormSchema = z.infer<typeof FormSchema>;
 

@@ -1,10 +1,10 @@
-import { db } from "@/app/server/db";
+import { db } from "@/db";
 import {
   formDataVersions,
   formDefinitions,
   workflowDefinitions,
   workflowInstances,
-} from "@/app/server/db/schema";
+} from "@/db/schema";
 import { desc } from "drizzle-orm";
 import Link from "next/link";
 

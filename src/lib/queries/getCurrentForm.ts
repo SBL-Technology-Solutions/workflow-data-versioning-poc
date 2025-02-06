@@ -1,7 +1,7 @@
 "use server";
 import { and, desc, eq } from "drizzle-orm";
-import { db } from "../db";
-import { formDefinitions, workflowInstances } from "../db/schema";
+import { db } from "../../db";
+import { formDefinitions, workflowInstances } from "../../db/schema";
 
 export async function getCurrentForm(
   workflowInstanceId: number,

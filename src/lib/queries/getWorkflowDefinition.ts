@@ -1,5 +1,5 @@
-import { db } from "@/app/server/db";
-import { workflowDefinitions } from "@/app/server/db/schema";
+import { db } from "@/db";
+import { workflowDefinitions } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function getWorkflowDefinition(id: number) {

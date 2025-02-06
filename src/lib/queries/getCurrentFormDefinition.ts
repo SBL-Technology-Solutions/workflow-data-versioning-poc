@@ -1,5 +1,5 @@
-import { db } from "@/app/server/db";
-import { formDefinitions } from "@/app/server/db/schema";
+import { db } from "@/db";
+import { formDefinitions } from "@/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 
 export async function getCurrentFormDefinition(workflowId: number, state: string) {

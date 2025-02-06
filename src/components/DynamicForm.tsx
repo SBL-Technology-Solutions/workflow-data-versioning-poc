@@ -1,6 +1,6 @@
 "use client";
 
-import { FormState } from "@/app/server/actions/onSubmitAction";
+import { FormState } from "@/app/actions/onSubmitAction";
 import { Button } from "@/components/ui/button";
 import {
   Form,
