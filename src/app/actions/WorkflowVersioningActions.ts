@@ -34,7 +34,7 @@ export async function createFormVersion(
   workflowDefId: number,
   state: string,
   schema: FormSchema
-): Promise<{ id: number }> {
+) {
   const currentVersion = await db
     .select()
     .from(formDefinitions)
@@ -56,9 +56,7 @@ export async function createFormVersion(
     schema,
   }).returning({ id: formDefinitions.id });
 
-  console.log("result: ", result);
-
-  return { id: result[0].id };
+  return result;
 }
 
 export async function createDataVersion(
