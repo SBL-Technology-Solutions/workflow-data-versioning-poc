@@ -1,14 +1,16 @@
-- [ ] Add a workflow instance page that shows the current state and the form for that state
+- [x] Add a workflow instance page that shows the current state and the form for that state
 
 Dynamic Forms and Schema Versioning
 
 - [x] Update JSON typing to be more strict starting with simple form definitions leveraging zod
 - [x] Update the dynamic form to use ShadCN UI
-- [ ] add an admin form editor page so that you can update the form definition and create a new version
+- [x] add an admin form editor page so that you can update the form definition and create a new version
       Core Workflow Features
 
 - [ ] Create basic workflow engine using XState
 
+  - [ ] Buttons: Save/Next/Previous (depending on what's available)
+  - [ ] Create a new form_data_version (if doesn't exist) and update the current_state / status in DB
   - [ ] Define initial workflow states and transitions
   - [ ] Implement state persistence in database
   - [ ] Add ability to version workflow definitions

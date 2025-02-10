@@ -4,19 +4,7 @@ import { getCurrentForm } from "@/lib/queries/getCurrentForm";
 import { getLatestCurrentFormData } from "@/lib/queries/getLatestCurrentFormData";
 import { getWorkflowInstance } from "@/lib/queries/getWorkflowInstance";
 import { DynamicForm } from "@/components/DynamicForm";
-import { revalidatePath } from "next/cache";
 import Link from "next/link";
-
-async function submitFormAction(
-  data: Record<string, any>,
-  workflowInstanceId: number,
-  formId: number
-) {
-  "use server";
-
-  await createDataVersion(workflowInstanceId, formId, data);
-  revalidatePath(`/workflow/${workflowInstanceId}`);
-}
 
 const WorkflowPage = async ({ params }: { params: { id: string } }) => {
   const { id } = await params;
@@ -45,18 +33,6 @@ const WorkflowPage = async ({ params }: { params: { id: string } }) => {
 
   console.log("latestFormData: ", latestFormData);
 
-  const handleSubmit = async (prevState: FormState, formData: FormData) => {
-    "use server";
-    return onSubmitAction(
-      prevState,
-      formData,
-      currentForm.schema!,
-      submitFormAction,
-      workflowInstanceId,
-      currentForm.formId
-    );
-  };
-
   return (
     <div className="container mx-auto p-4">
       <Link href="/" className="text-blue-500 hover:underline mb-4 block">
@@ -71,7 +47,8 @@ const WorkflowPage = async ({ params }: { params: { id: string } }) => {
         <DynamicForm
           schema={currentForm.schema}
           initialData={latestFormData[0]?.data}
-          action={handleSubmit}
+          workflowInstanceId={workflowInstanceId}
+          formDefId={currentForm.formId}
         />
       )}
     </div>
