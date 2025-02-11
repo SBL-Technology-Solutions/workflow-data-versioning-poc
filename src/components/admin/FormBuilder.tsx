@@ -65,7 +65,6 @@ export function FormBuilder({
       toast.success("Form definition saved successfully");
     } catch (error) {
       toast.error("Failed to save form definition");
-      console.error("Failed to save form:", error);
     }
   }
 

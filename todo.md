@@ -7,10 +7,10 @@ Dynamic Forms and Schema Versioning
 - [x] add an admin form editor page so that you can update the form definition and create a new version
       Core Workflow Features
 
-- [ ] Create basic workflow engine using XState
+- [x] Create basic workflow engine using XState
 
-  - [ ] Buttons: Save/Next/Previous (depending on what's available)
-  - [ ] Create a new form_data_version (if doesn't exist) and update the current_state / status in DB
+  - [x] Buttons: Save/Next/Previous (depending on what's available)
+  - [x] Create a new form_data_version (if doesn't exist) and update the current_state / status in DB
   - [ ] Define initial workflow states and transitions
   - [ ] Implement state persistence in database
   - [ ] Add ability to version workflow definitions

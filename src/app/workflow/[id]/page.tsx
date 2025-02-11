@@ -1,26 +1,26 @@
-import { FormState, onSubmitAction } from "@/app/actions/onSubmitAction";
-import { createDataVersion } from "@/app/actions/WorkflowVersioningActions";
 import { getCurrentForm } from "@/lib/queries/getCurrentForm";
 import { getLatestCurrentFormData } from "@/lib/queries/getLatestCurrentFormData";
 import { getWorkflowInstance } from "@/lib/queries/getWorkflowInstance";
 import { DynamicForm } from "@/components/DynamicForm";
 import Link from "next/link";
+import { getWorkflowDefinition } from "@/lib/queries/getWorkflowDefinition";
 
 const WorkflowPage = async ({ params }: { params: { id: string } }) => {
   const { id } = await params;
   const workflowInstanceId = parseInt(id);
-  const workflow = await getWorkflowInstance(workflowInstanceId);
-  if (!workflow) {
+  const workflowInstance = await getWorkflowInstance(workflowInstanceId);
+  
+  if (!workflowInstance) {
     return <div>No workflow found</div>;
   }
 
-  console.log("workflow: ", workflow);
+  console.log("workflow: ", workflowInstance);
   const currentForm = await getCurrentForm(
     workflowInstanceId,
-    workflow.currentState
+    workflowInstance.currentState
   );
 
-  if (!currentForm.formId) {
+  if (!currentForm.formDefId) {
     return <div>No form found</div>;
   }
 
@@ -28,10 +28,16 @@ const WorkflowPage = async ({ params }: { params: { id: string } }) => {
 
   const latestFormData = await getLatestCurrentFormData(
     workflowInstanceId,
-    currentForm.formId
+    currentForm.formDefId
   );
 
   console.log("latestFormData: ", latestFormData);
+
+  const workflowDefinition = await getWorkflowDefinition(workflowInstance.workflowDefId);
+  const machineConfig = {
+    ...workflowDefinition.machineConfig,
+    initial: workflowInstance.currentState, // Set the initial state to the current state
+  };
 
   return (
     <div className="container mx-auto p-4">
@@ -40,15 +46,17 @@ const WorkflowPage = async ({ params }: { params: { id: string } }) => {
       </Link>
 
       <h1 className="text-2xl font-bold mb-4">
-        Workflow Step: {workflow.currentState}
+        Workflow Step: {workflowInstance.currentState}
       </h1>
 
       {currentForm.schema && (
         <DynamicForm
+          key={currentForm.formDefId}
           schema={currentForm.schema}
           initialData={latestFormData[0]?.data}
           workflowInstanceId={workflowInstanceId}
-          formDefId={currentForm.formId}
+          formDefId={currentForm.formDefId}
+          machineConfig={machineConfig}
         />
       )}
     </div>

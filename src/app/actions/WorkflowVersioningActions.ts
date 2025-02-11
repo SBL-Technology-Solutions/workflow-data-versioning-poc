@@ -131,11 +131,15 @@ export async function compareVersions(
 }
 
 export async function updateWorkflowState(id: number, newState: string) {
-  return await db
+  console.log("newState in server: ", newState);
+  const result = await db
     .update(workflowInstances)
     .set({
       currentState: newState,
       updatedAt: new Date(),
     })
-    .where(eq(workflowInstances.id, id));
+    .where(eq(workflowInstances.id, id))
+    .returning({ id: workflowInstances.id });
+
+  return result;
 }
