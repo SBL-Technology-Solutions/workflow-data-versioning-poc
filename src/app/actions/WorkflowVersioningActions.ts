@@ -49,7 +49,7 @@ export async function createFormVersion(
 
   const nextVersion = currentVersion.length ? currentVersion[0].version + 1 : 1;
 
-  // Returns a plain objects as the QueryResult object cannot be passed from server to client
+  // Returns a plain object as the QueryResult object cannot be passed from server to client
   const result = await db.insert(formDefinitions).values({
     workflowDefId,
     state,
@@ -89,7 +89,7 @@ export async function createDataVersion(
   }
   console.log("patch: ", patch);
 
-  // Returns a plain objects as the QueryResult object cannot be passed from server to client
+  // Returns a plain object as the QueryResult object cannot be passed from server to client
   const result = await db.insert(formDataVersions).values({
     workflowInstanceId,
     formDefId,
@@ -131,7 +131,6 @@ export async function compareVersions(
 }
 
 export async function updateWorkflowState(id: number, newState: string) {
-  console.log("newState in server: ", newState);
   const result = await db
     .update(workflowInstances)
     .set({
