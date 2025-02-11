@@ -1,6 +1,6 @@
 "use client";
 
-import { FormState } from "@/app/actions/onSubmitAction";
+import { createDataVersion, updateWorkflowState } from "@/app/actions/WorkflowVersioningActions";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -15,20 +15,31 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { createZodValidationSchema, type FormSchema } from "@/lib/types/form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { startTransition, useActionState, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
+import { createActor, createMachine } from "xstate";
+import { usePathname, useRouter } from "next/navigation";
+
 interface DynamicFormProps {
+  key: number;
   schema: FormSchema;
   initialData?: Record<string, any>;
-  action: (prevState: FormState, formData: FormData) => Promise<FormState>;
+  workflowInstanceId: number;
+  formDefId: number;
+  machineConfig: Object;
 }
 
 export const DynamicForm = ({
   schema,
   initialData,
-  action,
-}: DynamicFormProps) => {
+  workflowInstanceId,
+  formDefId,
+  machineConfig,
+}: DynamicFormProps) => {  
+  const { replace } = useRouter();
+  const pathname = usePathname();
+
   const validationSchema = createZodValidationSchema(schema);
 
   // Create initial data if not provided
@@ -39,19 +50,9 @@ export const DynamicForm = ({
     },
     {}
   );
-  console.log("initialData: ", initialData);
-  console.log("defaultInitialData: ", defaultInitialData);
-
-  const [formState, formAction, pending] = useActionState<FormState, FormData>(
-    action,
-    {
-      success: false,
-    }
-  );
 
   const effectiveInitialData =
-    initialData ?? formState?.fields ?? defaultInitialData;
-  console.log("effectiveInitialData: ", effectiveInitialData);
+    initialData ?? defaultInitialData;
 
   const form = useForm<z.output<typeof validationSchema>>({
     resolver: zodResolver(validationSchema),
@@ -59,10 +60,23 @@ export const DynamicForm = ({
     mode: "onTouched",
   });
 
-  console.log(form.formState);
-  console.log("fields returned: ", { ...(formState?.fields ?? {}) });
+  const workflowMachine = createMachine(machineConfig);
+  const workflowActor = createActor(workflowMachine).start();
 
-  const formRef = useRef<HTMLFormElement>(null);
+  workflowActor.subscribe(async (snapshot) => {
+      console.log("subscription state value: ", snapshot.value);
+      await updateWorkflowState(workflowInstanceId, snapshot.value.toString());
+      replace(`${pathname}`);
+  });
+
+  async function onSave(data: Record<string, any>) {
+    try {
+      await createDataVersion(workflowInstanceId, formDefId, data);
+      toast.success("Form definition saved successfully");
+    } catch (error) {
+      toast.error("Failed to save form definition");
+    }
+  }
 
   const renderField = (name: string, field: FormSchema["fields"][number]) => (
     <FormField
@@ -78,7 +92,6 @@ export const DynamicForm = ({
             {field.type === "textarea" ? (
               <Textarea
                 {...formField}
-                disabled={pending}
                 rows={field.rows}
                 placeholder={field.description}
               />
@@ -86,7 +99,6 @@ export const DynamicForm = ({
               <Input
                 {...formField}
                 type={field.type}
-                disabled={pending}
                 placeholder={field.description}
               />
             )}
@@ -102,32 +114,8 @@ export const DynamicForm = ({
 
   return (
     <Form {...form}>
-      {formState.message !== "" && !formState?.errors && (
-        <div className="text-destructive">
-          <p>{formState.message}</p>
-        </div>
-      )}
-      {formState?.errors && (
-        <div>
-          <ul>
-            {Object.entries(formState.errors).map(([key, value]) => (
-              <li key={key} className="flex gap-1 text-destructive">
-                {key}: {value?.join(", ")}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
       <form
-        ref={formRef}
-        action={formAction}
-        onSubmit={(evt) => {
-          evt.preventDefault();
-          form.handleSubmit(() => {
-            console.log("formRef.current: ", formRef.current);
-            startTransition(() => formAction(new FormData(formRef.current!)));
-          })(evt);
-        }}
+        onSubmit={form.handleSubmit(onSave)}
         className="space-y-6"
       >
         {schema.title && (
@@ -140,10 +128,12 @@ export const DynamicForm = ({
         {schema.fields.map((field) => (
           <div key={field.name}>{renderField(field.name, field)}</div>
         ))}
-
-        <Button type="submit" disabled={pending}>
-          {pending ? "Submitting..." : "Submit"}
-        </Button>
+        <div className="flex space-x-2">
+          <Button type="submit">Save</Button>
+          {workflowActor.getSnapshot().can({type: 'NEXT'}) && (
+            <Button type="button" onClick={() => workflowActor.send({ type: "NEXT" })}>Next</Button>
+          )}
+        </div>
       </form>
     </Form>
   );

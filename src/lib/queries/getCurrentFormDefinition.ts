@@ -2,6 +2,7 @@ import { db } from "@/db";
 import { formDefinitions } from "@/db/schema";
 import { and, desc, eq } from "drizzle-orm";
 
+// Get Form Definition for a given state of the Workflow Definition
 export async function getCurrentFormDefinition(workflowId: number, state: string) {
   const forms = await db
     .select()

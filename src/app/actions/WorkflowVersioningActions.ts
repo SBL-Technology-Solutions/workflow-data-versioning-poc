@@ -49,6 +49,7 @@ export async function createFormVersion(
 
   const nextVersion = currentVersion.length ? currentVersion[0].version + 1 : 1;
 
+  // Returns a plain object as the QueryResult object cannot be passed from server to client
   const result = await db.insert(formDefinitions).values({
     workflowDefId,
     state,
@@ -88,14 +89,17 @@ export async function createDataVersion(
   }
   console.log("patch: ", patch);
 
-  return await db.insert(formDataVersions).values({
+  // Returns a plain object as the QueryResult object cannot be passed from server to client
+  const result = await db.insert(formDataVersions).values({
     workflowInstanceId,
     formDefId,
     version: previousData.length ? previousData[0].version + 1 : 1,
     data,
     patch,
     createdBy: "user",
-  });
+  }).returning({ id: formDataVersions.id });
+
+  return result
 }
 
 export async function compareVersions(
@@ -127,11 +131,14 @@ export async function compareVersions(
 }
 
 export async function updateWorkflowState(id: number, newState: string) {
-  return await db
+  const result = await db
     .update(workflowInstances)
     .set({
       currentState: newState,
       updatedAt: new Date(),
     })
-    .where(eq(workflowInstances.id, id));
+    .where(eq(workflowInstances.id, id))
+    .returning({ id: workflowInstances.id });
+
+  return result;
 }

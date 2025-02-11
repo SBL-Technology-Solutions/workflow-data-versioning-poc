@@ -7,11 +7,12 @@ export async function getCurrentForm(
   workflowInstanceId: number,
   state: string
 ) {
-  // Get the workflow instance to find the workflow definition ID
+  // Using the workflowInstanceId, get the latest Form Definition
+  // for the current state of the workflow instance
   const result = await db
     .select({
       workflowDefId: workflowInstances.workflowDefId,
-      formId: formDefinitions.id,
+      formDefId: formDefinitions.id,
       schema: formDefinitions.schema,
     })
     .from(workflowInstances)
@@ -34,7 +35,7 @@ export async function getCurrentForm(
     throw new Error("Workflow definition ID not found");
   }
 
-  if (!result[0].formId) {
+  if (!result[0].formDefId) {
     throw new Error(`No form found for state: ${state}`);
   }
 
