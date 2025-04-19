@@ -17,6 +17,7 @@ Dynamic Forms and Schema Versioning
 - [ ] Build form management system
 
   - [x] Create form schema definition system using Zod
+  - [ ] Update the field code to allow for selection of existing fields or creation of a new field this way it is easier for the user to reuse existing fields
   - [ ] Add support for additional form types
   - [ ] Add support for dependent fields / conditional logic
   - [ ] Add support for grouping fields by section
@@ -28,6 +29,8 @@ Dynamic Forms and Schema Versioning
   - [ ] Create form builder/editor UI for admins
     - [ ] Submitting form is not yet working
     - [ ] changing states for workflow is not working as expected and the form is not re-rendering when route changes
+
+- [ ] Should we add a materiality field to each question so that we can track changes to material fields to send back in the workflow?
 
 - [ ] Implement approval workflow
 
