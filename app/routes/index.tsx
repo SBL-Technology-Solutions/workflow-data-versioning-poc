@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 import * as fs from "node:fs";
@@ -35,9 +36,8 @@ function Home() {
 
   return (
     <>
-      <h1>This is the index tsx</h1>
-      <button
-        type="button"
+      <Button
+        className="cursor-pointer"
         onClick={() => {
           updateCount({ data: 1 }).then(() => {
             router.invalidate();
@@ -45,7 +45,7 @@ function Home() {
         }}
       >
         Add 1 to {state}?
-      </button>
+      </Button>
     </>
   );
 }
