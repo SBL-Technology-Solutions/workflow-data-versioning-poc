@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import { Button } from "@/components/ui/button";
+import { getAllWorkflowInstances } from "@/domains/workflowInstances";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
 
@@ -10,6 +11,12 @@ async function readCount() {
 		await fs.promises.readFile(filePath, "utf-8").catch(() => "0"),
 	);
 }
+
+const getWorkflowInstances = createServerFn({
+	method: "GET",
+}).handler(async () => {
+	return getAllWorkflowInstances();
+});
 
 const getCount = createServerFn({
 	method: "GET",
@@ -27,12 +34,18 @@ const updateCount = createServerFn({ method: "POST" })
 
 export const Route = createFileRoute("/")({
 	component: Home,
-	loader: async () => await getCount(),
+	loader: async () => {
+		const [state, instances] = await Promise.all([
+			getCount(),
+			getWorkflowInstances(),
+		]);
+		return { state, instances };
+	},
 });
 
 function Home() {
 	const router = useRouter();
-	const state = Route.useLoaderData();
+	const { state, instances } = Route.useLoaderData();
 
 	return (
 		<>
@@ -46,6 +59,7 @@ function Home() {
 			>
 				Add 1 to {state}?
 			</Button>
+			<pre>{JSON.stringify(instances, null, 2)}</pre>
 		</>
 	);
 }
