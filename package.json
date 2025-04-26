@@ -23,6 +23,7 @@
 	"dependencies": {
 		"@neondatabase/serverless": "^1.0.0",
 		"@radix-ui/react-slot": "^1.2.0",
+		"@t3-oss/env-core": "^0.13.0",
 		"@tailwindcss/postcss": "^4.1.4",
 		"@tanstack/react-router": "^1.116.0",
 		"@tanstack/react-start": "^1.116.2",
