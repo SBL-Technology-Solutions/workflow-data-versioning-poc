@@ -1,3 +1,4 @@
+import { createServerFn } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { workflowDefinitions, workflowInstances } from "../db/schema";
@@ -33,7 +34,18 @@ export async function getWorkflowInstance(id: number) {
 	return result[0];
 }
 
-export async function getAllWorkflowInstances() {
-	const result = await db.select().from(workflowInstances);
-	return result;
+export async function listWorkflowInstances() {
+	return await db.select().from(workflowInstances);
 }
+
+export const fetchWorkflowInstances = createServerFn({
+	method: "GET",
+}).handler(async () => {
+	console.info("Fetching workflow Instances");
+	return listWorkflowInstances();
+});
+
+export const workflowInstancesQueryOptions = () => ({
+	queryKey: ["workflowInstances"],
+	queryFn: () => fetchWorkflowInstances(),
+});

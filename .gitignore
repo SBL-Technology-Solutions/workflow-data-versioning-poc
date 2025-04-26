@@ -4,3 +4,7 @@ node_modules
 .output
 .vinxi
 .vercel
+.DS_Store
+dist
+dist-ssr
+*.local
