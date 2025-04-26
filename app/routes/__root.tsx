@@ -56,6 +56,8 @@ function RootComponent() {
 		<RootDocument>
 			<Header />
 			<Outlet />
+			<TanStackRouterDevtools position="bottom-left" />
+			<ReactQueryDevtools buttonPosition="bottom-right" />
 		</RootDocument>
 	);
 }
@@ -68,8 +70,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			</head>
 			<body>
 				{children}
-				<TanStackRouterDevtools position="bottom-right" />
-				<ReactQueryDevtools buttonPosition="bottom-left" initialIsOpen={true} />
 				<Scripts />
 			</body>
 		</html>

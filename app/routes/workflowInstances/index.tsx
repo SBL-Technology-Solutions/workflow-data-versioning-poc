@@ -1,6 +1,5 @@
-import { Button } from "@/components/ui/button";
 import { workflowInstancesQueryOptions } from "@/domains/workflowInstances";
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/workflowInstances/")({
@@ -18,7 +17,7 @@ function RouteComponent() {
 
 	return (
 		<>
-			<Button onClick={() => workflowInstancesQuery.refetch()}>Click me</Button>
+			<h2>Workflow Instances</h2>
 			<pre>{JSON.stringify(workflowInstancesQuery.data, null, 2)}</pre>
 		</>
 	);

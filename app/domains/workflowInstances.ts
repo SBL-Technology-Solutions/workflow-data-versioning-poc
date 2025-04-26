@@ -1,9 +1,9 @@
 import { createServerFn } from "@tanstack/react-start";
 import { eq } from "drizzle-orm";
-import { db } from "../db";
 import { workflowDefinitions, workflowInstances } from "../db/schema";
 
 export async function getWorkflowInstance(id: number) {
+	const { db } = await import("../db");
 	const result = await db
 		.select({
 			id: workflowInstances.id,
@@ -35,6 +35,7 @@ export async function getWorkflowInstance(id: number) {
 }
 
 export async function listWorkflowInstances() {
+	const { db } = await import("../db");
 	return await db.select().from(workflowInstances);
 }
 
