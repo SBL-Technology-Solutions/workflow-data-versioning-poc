@@ -1,4 +1,4 @@
-import { workflowInstancesQueryOptions } from "@/domains/workflowInstances";
+import { workflowInstancesQueryOptions } from "@/data/workflowInstances";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
