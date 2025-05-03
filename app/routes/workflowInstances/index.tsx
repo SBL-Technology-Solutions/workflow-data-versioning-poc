@@ -5,7 +5,7 @@ import { createFileRoute } from "@tanstack/react-router";
 export const Route = createFileRoute("/workflowInstances/")({
 	component: RouteComponent,
 	loader: async ({ context }) => {
-		await context.queryClient.ensureQueryData(workflowInstancesQueryOptions());
+		return context.queryClient.ensureQueryData(workflowInstancesQueryOptions());
 	},
 	pendingComponent: () => <div>Loading...</div>,
 });
