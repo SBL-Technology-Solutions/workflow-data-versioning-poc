@@ -18,6 +18,6 @@ export const fetchWorkflowDefinitions = createServerFn({
 });
 
 export const workflowDefinitionsQueryOptions = () => ({
-	queryKey: ["workflowDefinitions"],
+	queryKey: ["workflowDefinitions", { limit: 5 }],
 	queryFn: () => fetchWorkflowDefinitions(),
 });

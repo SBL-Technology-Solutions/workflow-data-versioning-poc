@@ -18,6 +18,6 @@ export const fetchFormDataVersions = createServerFn({
 });
 
 export const formDataVersionsQueryOptions = () => ({
-	queryKey: ["formDataVersions"],
+	queryKey: ["formDataVersions", { limit: 5 }],
 	queryFn: () => fetchFormDataVersions(),
 });

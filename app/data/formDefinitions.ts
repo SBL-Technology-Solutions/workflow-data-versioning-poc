@@ -18,6 +18,6 @@ export const fetchFormDefinitions = createServerFn({
 });
 
 export const formDefinitionsQueryOptions = () => ({
-	queryKey: ["formDefinitions"],
+	queryKey: ["formDefinitions", { limit: 5 }],
 	queryFn: () => fetchFormDefinitions(),
 });
