@@ -1,6 +1,8 @@
 import { workflowDefinitions } from "@/db/schema";
+import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
+import z from "zod";
 
 export async function getWorkflowDefinitions() {
 	const { db } = await import("../db");
@@ -21,3 +23,30 @@ export const workflowDefinitionsQueryOptions = () => ({
 	queryKey: ["workflowDefinitions", { limit: 5 }],
 	queryFn: () => fetchWorkflowDefinitions(),
 });
+
+export async function getWorkflowDefinition(id: number) {
+	const { db } = await import("../db");
+	const workflows = await db
+		.select()
+		.from(workflowDefinitions)
+		.where(eq(workflowDefinitions.id, id))
+		.limit(1);
+
+	if (!workflows.length) {
+		throw new Error("Workflow not found");
+	}
+
+	return workflows[0];
+}
+
+export const fetchWorkflowDefinition = createServerFn({
+	method: "GET",
+})
+	.validator(z.object({ id: z.number() }))
+	.handler(async ({ data: { id } }) => getWorkflowDefinition(id));
+
+export const workflowDefinitionQueryOptions = (id: number) =>
+	queryOptions({
+		queryKey: ["workflowDefinition", id],
+		queryFn: () => fetchWorkflowDefinition({ data: { id } }),
+	});
