@@ -12,6 +12,7 @@ import appCss from "@/styles/app.css?url";
 
 import { DefaultCatchBoundary } from "@/components/DefaultCatchBoundary";
 import { NotFound } from "@/components/NotFound";
+import { Toaster } from "@/components/ui/sonner";
 import type { QueryClient } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
@@ -56,6 +57,7 @@ function RootComponent() {
 		<RootDocument>
 			<Header />
 			<Outlet />
+			<Toaster />
 			<TanStackRouterDevtools position="bottom-left" />
 			<ReactQueryDevtools buttonPosition="bottom-right" />
 		</RootDocument>

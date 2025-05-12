@@ -74,3 +74,30 @@ export const workflowInstancesQueryOptions = () =>
 		queryKey: ["workflowInstances", { limit: 5 }],
 		queryFn: () => fetchWorkflowInstances(),
 	});
+
+export async function updateWorkflowState(id: number, newState: string) {
+	const { db } = await import("../db");
+	const result = await db
+		.update(workflowInstances)
+		.set({
+			currentState: newState,
+			updatedAt: new Date(),
+		})
+		.where(eq(workflowInstances.id, id))
+		.returning({ id: workflowInstances.id });
+
+	return result;
+}
+
+export const updateWorkflowStateServerFn = createServerFn({
+	method: "POST",
+})
+	.validator(
+		z.object({
+			id: z.number(),
+			newState: z.string(),
+		}),
+	)
+	.handler(async ({ data: { id, newState } }) => {
+		return updateWorkflowState(id, newState);
+	});

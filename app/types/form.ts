@@ -1,3 +1,4 @@
+import type { FormValidateOrFn } from "@tanstack/react-form";
 import { z } from "zod";
 
 // Basic field types we support
@@ -47,40 +48,93 @@ export const FormSchema = z.object({
 });
 export type FormSchema = z.infer<typeof FormSchema>;
 
-// Helper to create the runtime validation schema for react-hook-form
-export function createZodValidationSchema(form: FormSchema) {
-	const shape: Record<string, z.ZodType> = {};
+// 1) Same mapped types as before:
+type FieldToZod<F extends FormFieldSchema> = F["type"] extends
+	| "text"
+	| "textarea"
+	? z.ZodString
+	: F["type"] extends "number"
+		? z.ZodNumber
+		: F["type"] extends "checkbox"
+			? z.ZodBoolean
+			: F["type"] extends "multiselect"
+				? z.ZodArray<z.ZodString>
+				: z.ZodTypeAny;
 
-	for (const field of form.fields) {
-		let baseSchema = z.string();
+type FormValues<T extends FormSchema> = {
+	[F in T["fields"][number] as F["name"]]: F["type"] extends "text" | "textarea"
+		? string
+		: F["type"] extends "number"
+			? number
+			: F["type"] extends "checkbox"
+				? boolean
+				: F["type"] extends "multiselect"
+					? string[]
+					: unknown;
+};
 
-		// Add validations based on field type and constraints
-		if (field.required) {
-			baseSchema = baseSchema.min(1, {
-				message: `${field.label} is required`,
-			});
+// 2) Define a helper type for the shape of your Zod object:
+type ZodShape<T extends FormSchema> = {
+	[F in T["fields"][number] as F["name"]]: FieldToZod<F>;
+};
+
+export function createZodValidationSchema<T extends FormSchema>(
+	form: T,
+): FormValidateOrFn<FormValues<T>> {
+	// 1) Turn each field into a [name, schema] tuple
+	const entries = form.fields.map((field) => {
+		let schema: z.ZodTypeAny;
+
+		// build the right ZodTypeAny for this field
+		switch (field.type) {
+			case "text":
+			case "textarea": {
+				let s: z.ZodString = z.string();
+				if (field.required)
+					s = s.min(1, { message: `${field.label} is required` });
+				if (field.minLength != null)
+					s = s.min(field.minLength, {
+						message: `${field.label} must be at least ${field.minLength}`,
+					});
+				if (field.maxLength != null)
+					s = s.max(field.maxLength, {
+						message: `${field.label} must be at most ${field.maxLength}`,
+					});
+				if (field.type === "text" && field.pattern) {
+					s = s.regex(new RegExp(field.pattern), {
+						message: `${field.label} has invalid format`,
+					});
+				}
+				schema = field.required ? s : s.optional();
+				break;
+			}
+			// case "number": {
+			// 	let n: z.ZodNumber = z.number();
+			// 	// you could `.min()`/.max() here as well
+			// 	schema = field.required ? n : n.optional();
+			// 	break;
+			// }
+			// case "checkbox": {
+			// 	let b: z.ZodBoolean = z.boolean();
+			// 	schema = field.required ? b : b.optional();
+			// 	break;
+			// }
+			// case "multiselect": {
+			// 	let a: z.ZodArray<z.ZodString> = z.array(z.string());
+			// 	schema = field.required ? a : a.optional();
+			// 	break;
+			// }
+			default:
+				schema = z.any();
 		}
 
-		if (field.minLength) {
-			baseSchema = baseSchema.min(field.minLength, {
-				message: `${field.label} must be at least ${field.minLength} characters`,
-			});
-		}
+		// return a constant tuple
+		return [field.name, schema] as const;
+	});
 
-		if (field.maxLength) {
-			baseSchema = baseSchema.max(field.maxLength, {
-				message: `${field.label} must be at most ${field.maxLength} characters`,
-			});
-		}
+	// 2) Build your shape object in one shot
+	const shape = Object.fromEntries(entries) as ZodShape<T>;
 
-		if (field.type === "text" && field.pattern) {
-			baseSchema = baseSchema.regex(new RegExp(field.pattern), {
-				message: `${field.label} has an invalid format`,
-			});
-		}
-
-		shape[field.name] = field.required ? baseSchema : baseSchema.optional();
-	}
-
-	return z.object(shape);
+	// 3) Cast it into a ZodObject with the precise FormValues<T> input type
+	return z.object(shape) as unknown as FormValidateOrFn<FormValues<T>>;
 }
