@@ -138,3 +138,32 @@ export function createZodValidationSchema<T extends FormSchema>(
 	// 3) Cast it into a ZodObject with the precise FormValues<T> input type
 	return z.object(shape) as unknown as FormValidateOrFn<FormValues<T>>;
 }
+
+function emptyValueForField(f: FormFieldSchema): string {
+	switch (f.type) {
+		case "text":
+		case "textarea":
+			return "";
+		// case "number":
+		// 	return 0;
+		// case "checkbox":
+		// 	return false;
+		// case "multiselect":
+		// 	return [];
+		default:
+			return ""; // or throw, if you want to be exhaustive
+	}
+}
+
+// Given a FormSchema, build the initialValues
+export function makeInitialValues<T extends FormSchema>(
+	form: T,
+): Record<T["fields"][number]["name"], string> {
+	return form.fields.reduce(
+		(acc, field) => {
+			acc[field.name] = emptyValueForField(field);
+			return acc;
+		},
+		{} as Record<string, string>,
+	);
+}

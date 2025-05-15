@@ -4,7 +4,11 @@ import { useNavigate } from "@tanstack/react-router";
 
 import { createDataVersionServerFn } from "@/data/formDataVersions";
 import { updateWorkflowStateServerFn } from "@/data/workflowInstances";
-import { type FormSchema, createZodValidationSchema } from "@/types/form";
+import {
+	type FormSchema,
+	createZodValidationSchema,
+	makeInitialValues,
+} from "@/types/form";
 import { type AnyFieldApi, useForm } from "@tanstack/react-form";
 import { toast } from "sonner";
 import { createActor, createMachine } from "xstate";
@@ -58,12 +62,7 @@ export const DynamicForm = ({
 
 	const validationSchema = createZodValidationSchema(schema);
 
-	// Create initial data if not provided
-	const defaultInitialData = Object.fromEntries(
-		schema.fields.map((f) => [f.name, ""]),
-	) as Record<string, string>;
-
-	const effectiveInitialData = initialData ?? defaultInitialData;
+	const effectiveInitialData = initialData ?? makeInitialValues(schema);
 
 	const form = useForm({
 		defaultValues: effectiveInitialData,
@@ -94,6 +93,7 @@ export const DynamicForm = ({
 
 	async function onSave(data: Record<string, string>) {
 		try {
+			//TODO: add RQ mutation
 			await createDataVersionServerFn({
 				data: {
 					workflowInstanceId,

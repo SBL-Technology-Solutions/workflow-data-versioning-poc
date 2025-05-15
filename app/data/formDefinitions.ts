@@ -1,4 +1,5 @@
 import { formDefinitions, workflowInstances } from "@/db/schema";
+import { type FormSchema, FormSchema as zodFormSchema } from "@/types/form";
 import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq } from "drizzle-orm";
 import z from "zod";
@@ -63,7 +64,7 @@ export async function getCurrentForm(
 	return result[0];
 }
 
-export const fetchCurrentForm = createServerFn({
+export const getCurrentFormServerFn = createServerFn({
 	method: "GET",
 })
 	.validator(
@@ -77,10 +78,59 @@ export const fetchCurrentForm = createServerFn({
 		return getCurrentForm(workflowInstanceId, state);
 	});
 
-export const fetchCurrentFormQueryOptions = (
+export const getCurrentFormQueryOptions = (
 	workflowInstanceId: number,
 	state: string,
 ) => ({
 	queryKey: ["currentForm", { workflowInstanceId, state }],
-	queryFn: () => fetchCurrentForm({ data: { workflowInstanceId, state } }),
+	queryFn: () =>
+		getCurrentFormServerFn({ data: { workflowInstanceId, state } }),
 });
+
+export async function createFormVersion(
+	workflowDefId: number,
+	state: string,
+	schema: FormSchema,
+) {
+	const { db } = await import("../db");
+
+	const currentVersion = await db
+		.select()
+		.from(formDefinitions)
+		.where(
+			and(
+				eq(formDefinitions.workflowDefId, workflowDefId),
+				eq(formDefinitions.state, state),
+			),
+		)
+		.orderBy(desc(formDefinitions.version))
+		.limit(1);
+
+	const nextVersion = currentVersion.length ? currentVersion[0].version + 1 : 1;
+
+	const result = await db
+		.insert(formDefinitions)
+		.values({
+			workflowDefId,
+			state,
+			version: nextVersion,
+			schema,
+		})
+		.returning({ id: formDefinitions.id });
+
+	return result;
+}
+
+export const createFormVersionServerFn = createServerFn({
+	method: "POST",
+})
+	.validator(
+		z.object({
+			workflowDefId: z.number(),
+			state: z.string(),
+			schema: zodFormSchema,
+		}),
+	)
+	.handler(async ({ data: { workflowDefId, state, schema } }) =>
+		createFormVersion(workflowDefId, state, schema),
+	);

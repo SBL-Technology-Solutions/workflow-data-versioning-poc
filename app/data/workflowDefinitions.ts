@@ -39,14 +39,14 @@ export async function getWorkflowDefinition(id: number) {
 	return workflows[0];
 }
 
-export const fetchWorkflowDefinition = createServerFn({
+export const getWorkflowDefinitionServerFn = createServerFn({
 	method: "GET",
 })
 	.validator(z.object({ id: z.number() }))
 	.handler(async ({ data: { id } }) => getWorkflowDefinition(id));
 
-export const workflowDefinitionQueryOptions = (id: number) =>
+export const getWorkflowDefinitionQueryOptions = (id: number) =>
 	queryOptions({
 		queryKey: ["workflowDefinition", id],
-		queryFn: () => fetchWorkflowDefinition({ data: { id } }),
+		queryFn: () => getWorkflowDefinitionServerFn({ data: { id } }),
 	});

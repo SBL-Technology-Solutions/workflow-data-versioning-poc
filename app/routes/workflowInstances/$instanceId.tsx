@@ -1,7 +1,7 @@
 import { DynamicForm } from "@/components/DynamicForm";
 import { latestCurrentFormDataQueryOptions } from "@/data/formDataVersions";
-import { fetchCurrentFormQueryOptions } from "@/data/formDefinitions";
-import { workflowDefinitionQueryOptions } from "@/data/workflowDefinitions";
+import { getCurrentFormQueryOptions } from "@/data/formDefinitions";
+import { getWorkflowDefinitionQueryOptions } from "@/data/workflowDefinitions";
 import { fetchWorkflowInstanceQueryOptions } from "@/data/workflowInstances";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
@@ -32,7 +32,7 @@ function RouteComponent() {
 		isLoading: isCurrentFormLoading,
 		isError: isCurrentFormError,
 	} = useQuery({
-		...fetchCurrentFormQueryOptions(
+		...getCurrentFormQueryOptions(
 			Number(instanceId),
 			workflowInstance?.currentState ?? "",
 		),
@@ -56,7 +56,7 @@ function RouteComponent() {
 		isLoading: isWorkflowDefinitionLoading,
 		isError: isWorkflowDefinitionError,
 	} = useQuery({
-		...workflowDefinitionQueryOptions(workflowInstance?.workflowDefId ?? -1),
+		...getWorkflowDefinitionQueryOptions(workflowInstance?.workflowDefId ?? -1),
 		enabled: !!workflowInstance,
 	});
 
