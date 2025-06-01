@@ -9,11 +9,11 @@ import {
 	createZodValidationSchema,
 	makeInitialValues,
 } from "@/types/form";
-import { type AnyFieldApi, useForm } from "@tanstack/react-form";
+import type { AnyFieldApi } from "@tanstack/react-form";
 import { toast } from "sonner";
 import { createActor, createMachine } from "xstate";
 import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { useAppForm } from "./ui/tanstack-form";
 import { Textarea } from "./ui/textarea";
 
 interface DynamicFormProps {
@@ -64,7 +64,7 @@ export const DynamicForm = ({
 
 	const effectiveInitialData = initialData ?? makeInitialValues(schema);
 
-	const form = useForm({
+	const form = useAppForm({
 		defaultValues: effectiveInitialData,
 		onSubmit: async ({ value }) => {
 			// Do something with form data
@@ -108,17 +108,21 @@ export const DynamicForm = ({
 	}
 
 	const renderField = (fieldMeta: FormSchema["fields"][number]) => (
-		<form.Field key={fieldMeta.name} name={fieldMeta.name}>
-			{(field) => (
+		<form.AppField
+			key={fieldMeta.name}
+			name={fieldMeta.name}
+			children={(field) => (
 				<div className="space-y-2">
-					<div className="space-y-1">
-						<Label htmlFor={field.name}>
+					<field.FormItem>
+						<field.FormLabel>
 							{fieldMeta.label}
 							{fieldMeta.required ? (
-								<span className="text-destructive ml-1">*</span>
+								<span className="text-destructive -ml-1">*</span>
 							) : null}
-						</Label>
-						{fieldMeta.type === "textarea" ? (
+						</field.FormLabel>
+					</field.FormItem>
+					{fieldMeta.type === "textarea" ? (
+						<field.FormControl>
 							<Textarea
 								id={field.name}
 								value={field.state.value}
@@ -127,7 +131,9 @@ export const DynamicForm = ({
 								rows={fieldMeta.rows}
 								placeholder={fieldMeta.description}
 							/>
-						) : (
+						</field.FormControl>
+					) : (
+						<field.FormControl>
 							<Input
 								id={field.name}
 								value={field.state.value}
@@ -135,40 +141,42 @@ export const DynamicForm = ({
 								type={fieldMeta.type}
 								placeholder={fieldMeta.description}
 							/>
-						)}
-					</div>
-					<FieldInfo field={field} fieldMeta={fieldMeta} />
+						</field.FormControl>
+					)}
+					<field.FormMessage />
 				</div>
 			)}
-		</form.Field>
+		/>
 	);
 
 	return (
-		<form
-			className="flex flex-col gap-6"
-			onSubmit={(e) => {
-				e.preventDefault();
-				form.handleSubmit();
-			}}
-		>
-			{schema.title ? (
-				<h2 className="text-xl font-semibold">{schema.title}</h2>
-			) : null}
-			{schema.description ? (
-				<p className="text-muted-foreground">{schema.description}</p>
-			) : null}
-			{schema.fields.map((field) => renderField(field))}
-			<div className="flex space-x-2">
-				<Button type="submit">Save</Button>
-				{workflowActor.getSnapshot().can({ type: "NEXT" }) && (
-					<Button
-						type="button"
-						onClick={() => workflowActor.send({ type: "NEXT" })}
-					>
-						Next
-					</Button>
-				)}
-			</div>
-		</form>
+		<form.AppForm>
+			<form
+				className="flex flex-col gap-6"
+				onSubmit={(e) => {
+					e.preventDefault();
+					form.handleSubmit();
+				}}
+			>
+				{schema.title ? (
+					<h2 className="text-xl font-semibold">{schema.title}</h2>
+				) : null}
+				{schema.description ? (
+					<p className="text-muted-foreground">{schema.description}</p>
+				) : null}
+				{schema.fields.map((field) => renderField(field))}
+				<div className="flex space-x-2">
+					<Button type="submit">Save</Button>
+					{workflowActor.getSnapshot().can({ type: "NEXT" }) && (
+						<Button
+							type="button"
+							onClick={() => workflowActor.send({ type: "NEXT" })}
+						>
+							Next
+						</Button>
+					)}
+				</div>
+			</form>
+		</form.AppForm>
 	);
 };
