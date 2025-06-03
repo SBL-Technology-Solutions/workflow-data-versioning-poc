@@ -26,30 +26,6 @@ interface DynamicFormProps {
 	machineConfig: Record<string, unknown>;
 }
 
-function FieldInfo({
-	field,
-	fieldMeta,
-}: { field: AnyFieldApi; fieldMeta: FormSchema["fields"][number] }) {
-	return (
-		<>
-			{field.state.meta.isTouched && !field.state.meta.isValid ? (
-				<em className="text-[0.8rem] font-medium text-destructive">
-					{field.state.meta.errors.map(({ message }, index) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-						<p key={index} className="text-sm font-medium text-destructive">
-							{message}
-						</p>
-					))}
-				</em>
-			) : (
-				<em className="text-[0.8rem] font-medium text-muted-foreground">
-					{fieldMeta.description}
-				</em>
-			)}
-		</>
-	);
-}
-
 export const DynamicForm = ({
 	schema,
 	initialData,
