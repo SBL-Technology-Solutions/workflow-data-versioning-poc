@@ -105,3 +105,45 @@ export const updateWorkflowStateServerFn = createServerFn({
 	.handler(async ({ data: { id, newState } }) => {
 		return updateWorkflowState(id, newState);
 	});
+
+export async function createWorkflowInstance(workflowDefId: number) {
+	const { db } = await import("../db");
+	
+	// First, get the workflow definition to extract the initial state
+	const workflowDef = await db
+		.select()
+		.from(workflowDefinitions)
+		.where(eq(workflowDefinitions.id, workflowDefId))
+		.limit(1);
+
+	if (!workflowDef[0]) {
+		throw new Error(`Workflow definition with id ${workflowDefId} not found`);
+	}
+
+	// Extract initial state from the machine config
+	const machineConfig = workflowDef[0].machineConfig as any;
+	const initialState = machineConfig.initial || Object.keys(machineConfig.states)[0];
+
+	const result = await db
+		.insert(workflowInstances)
+		.values({
+			workflowDefId,
+			currentState: initialState,
+			status: "active",
+		})
+		.returning();
+
+	return result[0];
+}
+
+export const createWorkflowInstanceServerFn = createServerFn({
+	method: "POST",
+})
+	.validator(
+		z.object({
+			workflowDefId: z.number(),
+		}),
+	)
+	.handler(async ({ data: { workflowDefId } }) => {
+		return createWorkflowInstance(workflowDefId);
+	});	

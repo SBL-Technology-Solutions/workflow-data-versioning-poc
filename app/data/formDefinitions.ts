@@ -1,4 +1,8 @@
-import { formDefinitions, workflowInstances } from "@/db/schema";
+import {
+	formDataVersions,
+	formDefinitions,
+	workflowInstances,
+} from "@/db/schema";
 import { type FormSchema, FormSchema as zodFormSchema } from "@/types/form";
 import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq } from "drizzle-orm";
@@ -24,47 +28,87 @@ export const formDefinitionsQueryOptions = () => ({
 	queryFn: () => fetchFormDefinitions(),
 });
 
-export async function getCurrentForm(
+// For workflow instances - gets the latest form definition that has data for the instance
+export async function getCurrentFormForInstance(
 	workflowInstanceId: number,
 	state: string,
 ) {
 	const { db } = await import("../db");
-	// Using the workflowInstanceId, get the latest Form Definition
-	// for the current state of the workflow instance
-	const result = await db
+
+	// First get the workflow instance to get its workflowDefId
+	const instance = await db
 		.select({
 			workflowDefId: workflowInstances.workflowDefId,
+		})
+		.from(workflowInstances)
+		.where(eq(workflowInstances.id, workflowInstanceId))
+		.limit(1);
+
+	if (!instance.length) {
+		throw new Error("Workflow instance not found");
+	}
+
+	// Get the latest form definition that has data for this instance and state
+	const result = await db
+		.select({
 			formDefId: formDefinitions.id,
 			schema: formDefinitions.schema,
 		})
-		.from(workflowInstances)
-		.leftJoin(
-			formDefinitions,
+		.from(formDefinitions)
+		.innerJoin(
+			formDataVersions,
 			and(
-				eq(formDefinitions.workflowDefId, workflowInstances.workflowDefId),
+				eq(formDataVersions.formDefId, formDefinitions.id),
+				eq(formDataVersions.workflowInstanceId, workflowInstanceId),
+			),
+		)
+		.where(
+			and(
+				eq(formDefinitions.workflowDefId, instance[0].workflowDefId),
 				eq(formDefinitions.state, state),
 			),
 		)
-		.where(eq(workflowInstances.id, workflowInstanceId))
+		.orderBy(desc(formDefinitions.version))
+		.limit(1);
+
+	// If no form with data exists, fall back to getting the latest form definition
+	if (!result.length) {
+		return getCurrentFormForDefinition(instance[0].workflowDefId, state);
+	}
+
+	return result[0];
+}
+
+// For admin form editor - gets the latest form definition for a workflow definition
+export async function getCurrentFormForDefinition(
+	workflowDefId: number,
+	state: string,
+) {
+	const { db } = await import("../db");
+
+	const result = await db
+		.select({
+			formDefId: formDefinitions.id,
+			schema: formDefinitions.schema,
+		})
+		.from(formDefinitions)
+		.where(
+			and(
+				eq(formDefinitions.workflowDefId, workflowDefId),
+				eq(formDefinitions.state, state),
+			),
+		)
 		.orderBy(desc(formDefinitions.version))
 		.limit(1);
 
 	if (!result.length) {
-		throw new Error("Workflow instance not found");
-	}
-
-	if (!result[0].workflowDefId) {
-		throw new Error("Workflow definition ID not found");
-	}
-
-	if (!result[0].formDefId) {
 		throw new Error(`No form found for state: ${state}`);
 	}
 
 	return result[0];
 }
 
-export const getCurrentFormServerFn = createServerFn({
+export const getCurrentFormForInstanceServerFn = createServerFn({
 	method: "GET",
 })
 	.validator(
@@ -74,17 +118,40 @@ export const getCurrentFormServerFn = createServerFn({
 		}),
 	)
 	.handler(async ({ data: { workflowInstanceId, state } }) => {
-		console.info("Fetching current form");
-		return getCurrentForm(workflowInstanceId, state);
+		console.info("Fetching current form for instance");
+		return getCurrentFormForInstance(workflowInstanceId, state);
 	});
 
-export const getCurrentFormQueryOptions = (
+export const getCurrentFormForDefinitionServerFn = createServerFn({
+	method: "GET",
+})
+	.validator(
+		z.object({
+			workflowDefId: z.number(),
+			state: z.string(),
+		}),
+	)
+	.handler(async ({ data: { workflowDefId, state } }) => {
+		console.info("Fetching current form for definition");
+		return getCurrentFormForDefinition(workflowDefId, state);
+	});
+
+export const getCurrentFormForInstanceQueryOptions = (
 	workflowInstanceId: number,
 	state: string,
 ) => ({
-	queryKey: ["currentForm", { workflowInstanceId, state }],
+	queryKey: ["currentFormForInstance", { workflowInstanceId, state }],
 	queryFn: () =>
-		getCurrentFormServerFn({ data: { workflowInstanceId, state } }),
+		getCurrentFormForInstanceServerFn({ data: { workflowInstanceId, state } }),
+});
+
+export const getCurrentFormForDefinitionQueryOptions = (
+	workflowDefId: number,
+	state: string,
+) => ({
+	queryKey: ["currentFormForDefinition", { workflowDefId, state }],
+	queryFn: () =>
+		getCurrentFormForDefinitionServerFn({ data: { workflowDefId, state } }),
 });
 
 export async function createFormVersion(

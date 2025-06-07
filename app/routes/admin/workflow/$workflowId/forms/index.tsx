@@ -1,17 +1,14 @@
 import { FormBuilder } from "@/components/FormBuilder";
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectValue,
-} from "@/components/ui/select";
-import { SelectTrigger } from "@/components/ui/select";
-import { getCurrentFormQueryOptions } from "@/data/formDefinitions";
+import { StateSelector } from "@/components/StateSelector";
+import { getCurrentFormForDefinitionQueryOptions } from "@/data/formDefinitions";
 import { getWorkflowDefinitionQueryOptions } from "@/data/workflowDefinitions";
 import { useQuery } from "@tanstack/react-query";
 import { useSuspenseQuery } from "@tanstack/react-query";
-import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-
+import {
+	createFileRoute,
+	useNavigate,
+	useSearch,
+} from "@tanstack/react-router";
 import { z } from "zod";
 
 const workflowDefinitionSearchSchema = z.object({
@@ -35,6 +32,8 @@ export const Route = createFileRoute("/admin/workflow/$workflowId/forms/")({
 
 function RouteComponent() {
 	const { workflowId } = Route.useParams();
+	const { state } = useSearch({ from: "/admin/workflow/$workflowId/forms/" });
+	const navigate = useNavigate();
 	if (!workflowId) return <div>🌀 No workflow ID in URL</div>;
 
 	const { data: workflowDefinition } = useSuspenseQuery({
@@ -45,20 +44,27 @@ function RouteComponent() {
 		return <div>Workflow not found</div>;
 	}
 
-	const { state } = Route.useSearch();
-
 	const states = Object.keys(workflowDefinition.machineConfig.states);
 	const currentState = state || states[0];
-	console.log("states", states, "currentState", currentState);
+
+	const handleStateChange = (newState: string) => {
+		navigate({
+			to: "/admin/workflow/$workflowId/forms",
+			params: { workflowId },
+			search: { state: newState },
+		});
+	};
 
 	const {
 		data: currentForm,
 		isLoading: isCurrentFormLoading,
 		isError: isCurrentFormError,
 	} = useQuery({
-		...getCurrentFormQueryOptions(Number(workflowId), currentState),
+		...getCurrentFormForDefinitionQueryOptions(
+			Number(workflowId),
+			currentState,
+		),
 	});
-	console.log("currentForm", currentForm);
 
 	if (isCurrentFormLoading) return <div>Loading...</div>;
 	if (isCurrentFormError) return <div>Error loading current form</div>;
@@ -71,7 +77,11 @@ function RouteComponent() {
 					<h1 className="text-2xl font-bold">
 						Edit Form: {workflowDefinition.name}
 					</h1>
-					<StateSelector states={states} currentState={currentState} />
+					<StateSelector
+						states={states}
+						currentState={currentState}
+						onStateChange={handleStateChange}
+					/>
 				</div>
 				{/* <Link
 					to="/admin/workflows"
@@ -91,37 +101,6 @@ function RouteComponent() {
 				state={currentState}
 				key={currentForm.formDefId}
 			/>
-		</div>
-	);
-}
-
-function StateSelector({
-	states,
-	currentState,
-}: { states: string[]; currentState: string }) {
-	const navigate = useNavigate({ from: Route.fullPath });
-
-	const handleStateChange = (newState: string) => {
-		navigate({
-			search: { state: newState },
-		});
-	};
-
-	return (
-		<div className="flex items-center gap-2 py-6">
-			<span className="text-muted-foreground">State:</span>
-			<Select value={currentState} onValueChange={handleStateChange}>
-				<SelectTrigger className="w-[180px]">
-					<SelectValue placeholder="Select state" />
-				</SelectTrigger>
-				<SelectContent>
-					{states.map((stateOption) => (
-						<SelectItem key={stateOption} value={stateOption}>
-							{stateOption}
-						</SelectItem>
-					))}
-				</SelectContent>
-			</Select>
 		</div>
 	);
 }
