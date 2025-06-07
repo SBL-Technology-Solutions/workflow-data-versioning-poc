@@ -47,6 +47,10 @@ export const fetchWorkflowInstance = createServerFn({
 		return getWorkflowInstance(workflowInstanceId);
 	});
 
+export type WorkflowInstance = Awaited<
+	ReturnType<typeof fetchWorkflowInstance>
+>;
+
 export const fetchWorkflowInstanceQueryOptions = (instanceId: string) =>
 	queryOptions({
 		queryKey: ["workflowInstance", instanceId],

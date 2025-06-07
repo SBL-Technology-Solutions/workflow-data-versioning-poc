@@ -78,10 +78,8 @@ function RouteComponent() {
 	if (isWorkflowDefinitionError)
 		return <div>Error loading workflow definition</div>;
 
-	const machineConfig = {
-		...workflowDefinition?.machineConfig,
-		initial: workflowInstance.currentState,
-	};
+	if (!workflowDefinition?.machineConfig)
+		return <div>No machine config found</div>;
 
 	return (
 		<div className="container mx-auto p-4">
@@ -93,9 +91,9 @@ function RouteComponent() {
 				key={currentForm.formDefId}
 				schema={currentForm.schema}
 				initialData={latestCurrentFormData?.[0]?.data}
-				workflowInstanceId={Number(instanceId)}
+				workflowInstance={workflowInstance}
 				formDefId={currentForm.formDefId}
-				machineConfig={machineConfig}
+				machineConfig={workflowDefinition.machineConfig}
 			/>
 		</div>
 	);

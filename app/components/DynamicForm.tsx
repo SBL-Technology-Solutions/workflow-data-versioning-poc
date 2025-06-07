@@ -3,7 +3,7 @@ import { Button } from "./ui/button";
 import { useNavigate } from "@tanstack/react-router";
 
 import { createDataVersionServerFn } from "@/data/formDataVersions";
-import { updateWorkflowStateServerFn } from "@/data/workflowInstances";
+import { updateWorkflowStateServerFn, type WorkflowInstance } from "@/data/workflowInstances";
 import {
 	type FormSchema,
 	createZodValidationSchema,
@@ -20,7 +20,7 @@ interface DynamicFormProps {
 	key: number;
 	schema: FormSchema;
 	initialData?: Record<string, string>;
-	workflowInstanceId: number;
+	workflowInstance: WorkflowInstance;
 	formDefId: number;
 	//improve this typing
 	machineConfig: Record<string, unknown>;
@@ -29,7 +29,7 @@ interface DynamicFormProps {
 export const DynamicForm = ({
 	schema,
 	initialData,
-	workflowInstanceId,
+	workflowInstance,
 	formDefId,
 	machineConfig,
 }: DynamicFormProps) => {
@@ -53,14 +53,22 @@ export const DynamicForm = ({
 	});
 
 	const workflowMachine = createMachine(machineConfig);
-	const workflowActor = createActor(workflowMachine).start();
+	const resolvedState = workflowMachine.resolveState(
+		{
+			value: workflowInstance.currentState,
+		},
+	);
+	console.log("resolvedState: ", resolvedState);
+	const workflowActor = createActor(workflowMachine, {
+		snapshot: resolvedState,
+	}).start();
 
 	workflowActor.subscribe(async (snapshot) => {
 		console.log("subscription state value: ", snapshot.value);
 
 		await updateWorkflowStateServerFn({
 			data: {
-				id: Number(workflowInstanceId),
+				id: workflowInstance.id,
 				newState: snapshot.value.toString(),
 			},
 		});
@@ -72,7 +80,7 @@ export const DynamicForm = ({
 			//TODO: add RQ mutation
 			await createDataVersionServerFn({
 				data: {
-					workflowInstanceId,
+					workflowInstanceId: workflowInstance.id,
 					formDefId,
 					data,
 				},
