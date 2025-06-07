@@ -105,3 +105,29 @@ export const updateWorkflowStateServerFn = createServerFn({
 	.handler(async ({ data: { id, newState } }) => {
 		return updateWorkflowState(id, newState);
 	});
+
+export async function createWorkflowInstance(workflowDefId: number) {
+	const { db } = await import("../db");
+	const result = await db
+		.insert(workflowInstances)
+		.values({
+			workflowDefId,
+			currentState: "form1", // This should match the initial state in the workflow definition
+			status: "active",
+		})
+		.returning();
+
+	return result[0];
+}
+
+export const createWorkflowInstanceServerFn = createServerFn({
+	method: "POST",
+})
+	.validator(
+		z.object({
+			workflowDefId: z.number(),
+		}),
+	)
+	.handler(async ({ data: { workflowDefId } }) => {
+		return createWorkflowInstance(workflowDefId);
+	});	
