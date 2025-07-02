@@ -1,9 +1,10 @@
-import { type FormSchema } from "./form";
+import type { FormSchema } from "./form";
 
 export interface WorkflowDefinition {
 	id: number;
 	name: string;
-	machineConfig: {
+	version: number;
+	machineConfig?: {
 		id: string;
 		initial: string;
 		states: Record<
@@ -13,6 +14,7 @@ export interface WorkflowDefinition {
 			}
 		>;
 	};
+	states?: string[];
 	createdAt: Date;
 	updatedAt: Date;
 }

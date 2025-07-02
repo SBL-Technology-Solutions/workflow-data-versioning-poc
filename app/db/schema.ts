@@ -18,25 +18,46 @@ export const workflowDefinitions = pgTable("workflow_definitions", {
 	id: serial("id").primaryKey(),
 	name: varchar("name").notNull(),
 	version: integer("version").notNull(),
-	machineConfig: jsonb("machine_config").$type<Record<string, any>>().notNull(),
+	machineConfig: jsonb("machine_config").$type<{
+		id: string;
+		initial: string;
+		states: Record<
+			string,
+			{
+				on?: Record<string, string>;
+			}
+		>;
+	}>(),
 	states: text("states")
 		.array()
 		.generatedAlwaysAs(() => sql`states_keys(machine_config->'states')`),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at")
 		.notNull()
+		.defaultNow()
 		.$onUpdateFn(() => new Date()),
 });
 
-// Form Schemas
+// Form Definitions (now independent entities)
 export const formDefinitions = pgTable("form_definitions", {
+	id: serial("id").primaryKey(),
+	version: integer("version").notNull(),
+	schema: jsonb("schema").$type<FormSchemaType>().notNull(),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+	updatedAt: timestamp("updated_at")
+		.notNull()
+		.defaultNow()
+		.$onUpdateFn(() => new Date()),
+});
+
+// Junction table: maps workflow states to form definitions
+export const workflowFormDefinitions = pgTable("workflow_form_definitions", {
 	id: serial("id").primaryKey(),
 	workflowDefId: serial("workflow_def_id").references(
 		() => workflowDefinitions.id,
 	),
-	state: varchar("state").notNull(), // corresponds to XState state
-	version: integer("version").notNull(),
-	schema: jsonb("schema").$type<FormSchemaType>().notNull(), // Zod schema stored as JSON
+	formDefId: serial("form_def_id").references(() => formDefinitions.id),
+	state: varchar("state").notNull(), // which state in the workflow this form is for
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at")
 		.notNull()
@@ -67,25 +88,48 @@ export const formDataVersions = pgTable("form_data_versions", {
 	),
 	formDefId: serial("form_def_id").references(() => formDefinitions.id),
 	version: integer("version").notNull(),
-	data: jsonb("data").$type<Record<string, any>>().notNull(),
+	data: jsonb("data").$type<Record<string, unknown>>().notNull(),
 	patch: jsonb("patch")
 		.$type<
 			Array<{
 				op: string;
 				path: string;
-				value?: any;
+				value?: unknown;
 			}>
 		>()
-		.notNull(), // JSON Patch showing changes from previous version
+		.notNull(),
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	createdBy: varchar("created_by").notNull(),
 });
 
+// Relations
 export const workflowDefinitionsRelations = relations(
 	workflowDefinitions,
 	({ many }) => ({
 		instances: many(workflowInstances),
-		forms: many(formDefinitions),
+		formDefinitions: many(workflowFormDefinitions),
+	}),
+);
+
+export const formDefinitionsRelations = relations(
+	formDefinitions,
+	({ many }) => ({
+		workflowDefinitions: many(workflowFormDefinitions),
+		dataVersions: many(formDataVersions),
+	}),
+);
+
+export const workflowFormDefinitionsRelations = relations(
+	workflowFormDefinitions,
+	({ one }) => ({
+		workflowDefinition: one(workflowDefinitions, {
+			fields: [workflowFormDefinitions.workflowDefId],
+			references: [workflowDefinitions.id],
+		}),
+		formDefinition: one(formDefinitions, {
+			fields: [workflowFormDefinitions.formDefId],
+			references: [formDefinitions.id],
+		}),
 	}),
 );
 
@@ -96,17 +140,6 @@ export const workflowInstancesRelations = relations(
 			fields: [workflowInstances.workflowDefId],
 			references: [workflowDefinitions.id],
 		}),
-	}),
-);
-
-export const formDefinitionsRelations = relations(
-	formDefinitions,
-	({ one, many }) => ({
-		workflowDefinition: one(workflowDefinitions, {
-			fields: [formDefinitions.workflowDefId],
-			references: [workflowDefinitions.id],
-		}),
-		dataVersions: many(formDataVersions),
 	}),
 );
 

@@ -1,11 +1,11 @@
-import { workflowDefinitions } from "@/db/schema";
-import { type WorkflowDefinition } from "@/types/workflow";
+import { workflowDefinitions, workflowFormDefinitions } from "@/db/schema";
+import type { WorkflowDefinition } from "@/types/workflow";
 import { createServerFn } from "@tanstack/react-start";
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import z from "zod";
+import { db } from "../db";
 
 export async function getWorkflowDefinitions() {
-	const { db } = await import("../db");
 	return await db.query.workflowDefinitions.findMany({
 		orderBy: desc(workflowDefinitions.createdAt),
 		limit: 5,
@@ -25,7 +25,6 @@ export const workflowDefinitionsQueryOptions = () => ({
 });
 
 export async function getWorkflowDefinition(id: number) {
-	const { db } = await import("../db");
 	const result = await db
 		.select()
 		.from(workflowDefinitions)
@@ -60,14 +59,13 @@ export const getWorkflowDefinitionQueryOptions = (id: number) => ({
 export async function updateWorkflowDefinition(
 	id: number,
 	machineConfig: WorkflowDefinition["machineConfig"],
-	formDefIds: Record<string, number>,
+	stateFormMappings: Array<{ state: string; formDefId: number }>,
 ) {
-	const { db } = await import("../db");
+	// Update the workflow definition
 	const result = await db
 		.update(workflowDefinitions)
 		.set({
 			machineConfig,
-			formDefIds,
 			updatedAt: new Date(),
 		})
 		.where(eq(workflowDefinitions.id, id))
@@ -75,6 +73,22 @@ export async function updateWorkflowDefinition(
 
 	if (!result.length) {
 		throw new Error("Workflow definition not found");
+	}
+
+	// Delete existing form mappings for this workflow
+	await db
+		.delete(workflowFormDefinitions)
+		.where(eq(workflowFormDefinitions.workflowDefId, id));
+
+	// Insert new form mappings
+	if (stateFormMappings.length > 0) {
+		await db.insert(workflowFormDefinitions).values(
+			stateFormMappings.map((mapping) => ({
+				workflowDefId: id,
+				formDefId: mapping.formDefId,
+				state: mapping.state,
+			})),
+		);
 	}
 
 	return result[0];
@@ -95,16 +109,21 @@ export const updateWorkflowDefinitionServerFn = createServerFn({
 							on: z.record(z.string()).optional(),
 						}),
 					),
-				}),
-				formDefIds: z.record(z.number()),
+				}) as z.ZodType<WorkflowDefinition["machineConfig"]>,
+				stateFormMappings: z.array(
+					z.object({
+						state: z.string(),
+						formDefId: z.number(),
+					}),
+				),
 			}),
 		}),
 	)
 	.handler(async ({ data }) => {
 		console.info("Updating workflow definition");
 		return updateWorkflowDefinition(
-			data.id,
-			data.machineConfig,
-			data.formDefIds,
+			data.data.id,
+			data.data.machineConfig,
+			data.data.stateFormMappings,
 		);
 	});
