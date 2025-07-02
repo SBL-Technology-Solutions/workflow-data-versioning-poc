@@ -1,12 +1,14 @@
 import {
 	formDataVersions,
 	formDefinitions,
+	workflowFormDefinitions,
 	workflowInstances,
 } from "@/db/schema";
 import { type FormSchema, FormSchema as zodFormSchema } from "@/types/form";
 import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq } from "drizzle-orm";
 import z from "zod";
+import { db } from "../db";
 
 export async function getFormDefinitions() {
 	const { db } = await import("../db");
@@ -33,8 +35,6 @@ export async function getCurrentFormForInstance(
 	workflowInstanceId: number,
 	state: string,
 ) {
-	const { db } = await import("../db");
-
 	// First get the workflow instance to get its workflowDefId
 	const instance = await db
 		.select({
@@ -56,16 +56,11 @@ export async function getCurrentFormForInstance(
 		})
 		.from(formDefinitions)
 		.innerJoin(
-			formDataVersions,
+			workflowFormDefinitions,
 			and(
-				eq(formDataVersions.formDefId, formDefinitions.id),
-				eq(formDataVersions.workflowInstanceId, workflowInstanceId),
-			),
-		)
-		.where(
-			and(
-				eq(formDefinitions.workflowDefId, instance[0].workflowDefId),
-				eq(formDefinitions.state, state),
+				eq(workflowFormDefinitions.formDefId, formDefinitions.id),
+				eq(workflowFormDefinitions.workflowDefId, instance[0].workflowDefId),
+				eq(workflowFormDefinitions.state, state),
 			),
 		)
 		.orderBy(desc(formDefinitions.version))
@@ -84,18 +79,18 @@ export async function getCurrentFormForDefinition(
 	workflowDefId: number,
 	state: string,
 ) {
-	const { db } = await import("../db");
-
 	const result = await db
 		.select({
 			formDefId: formDefinitions.id,
 			schema: formDefinitions.schema,
 		})
 		.from(formDefinitions)
-		.where(
+		.innerJoin(
+			workflowFormDefinitions,
 			and(
-				eq(formDefinitions.workflowDefId, workflowDefId),
-				eq(formDefinitions.state, state),
+				eq(workflowFormDefinitions.formDefId, formDefinitions.id),
+				eq(workflowFormDefinitions.workflowDefId, workflowDefId),
+				eq(workflowFormDefinitions.state, state),
 			),
 		)
 		.orderBy(desc(formDefinitions.version))
@@ -159,15 +154,15 @@ export async function createFormVersion(
 	state: string,
 	schema: FormSchema,
 ) {
-	const { db } = await import("../db");
-
 	const currentVersion = await db
 		.select()
 		.from(formDefinitions)
-		.where(
+		.innerJoin(
+			workflowFormDefinitions,
 			and(
-				eq(formDefinitions.workflowDefId, workflowDefId),
-				eq(formDefinitions.state, state),
+				eq(workflowFormDefinitions.formDefId, formDefinitions.id),
+				eq(workflowFormDefinitions.workflowDefId, workflowDefId),
+				eq(workflowFormDefinitions.state, state),
 			),
 		)
 		.orderBy(desc(formDefinitions.version))
@@ -175,17 +170,23 @@ export async function createFormVersion(
 
 	const nextVersion = currentVersion.length ? currentVersion[0].version + 1 : 1;
 
-	const result = await db
+	// Create new form definition
+	const [formDef] = await db
 		.insert(formDefinitions)
 		.values({
-			workflowDefId,
-			state,
 			version: nextVersion,
 			schema,
 		})
 		.returning({ id: formDefinitions.id });
 
-	return result;
+	// Create workflow form definition association
+	await db.insert(workflowFormDefinitions).values({
+		workflowDefId,
+		formDefId: formDef.id,
+		state,
+	});
+
+	return formDef;
 }
 
 export const createFormVersionServerFn = createServerFn({

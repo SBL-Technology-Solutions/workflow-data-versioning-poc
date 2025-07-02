@@ -14,6 +14,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as IndexImport } from './routes/index'
 import { Route as WorkflowInstancesIndexImport } from './routes/workflowInstances/index'
 import { Route as WorkflowInstancesInstanceIdImport } from './routes/workflowInstances/$instanceId'
+import { Route as AdminWorkflowWorkflowIdEditImport } from './routes/admin/workflow/$workflowId/edit'
 import { Route as AdminWorkflowWorkflowIdFormsIndexImport } from './routes/admin/workflow/$workflowId/forms/index'
 
 // Create/Update Routes
@@ -34,6 +35,13 @@ const WorkflowInstancesInstanceIdRoute =
   WorkflowInstancesInstanceIdImport.update({
     id: '/workflowInstances/$instanceId',
     path: '/workflowInstances/$instanceId',
+    getParentRoute: () => rootRoute,
+  } as any)
+
+const AdminWorkflowWorkflowIdEditRoute =
+  AdminWorkflowWorkflowIdEditImport.update({
+    id: '/admin/workflow/$workflowId/edit',
+    path: '/admin/workflow/$workflowId/edit',
     getParentRoute: () => rootRoute,
   } as any)
 
@@ -69,6 +77,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkflowInstancesIndexImport
       parentRoute: typeof rootRoute
     }
+    '/admin/workflow/$workflowId/edit': {
+      id: '/admin/workflow/$workflowId/edit'
+      path: '/admin/workflow/$workflowId/edit'
+      fullPath: '/admin/workflow/$workflowId/edit'
+      preLoaderRoute: typeof AdminWorkflowWorkflowIdEditImport
+      parentRoute: typeof rootRoute
+    }
     '/admin/workflow/$workflowId/forms/': {
       id: '/admin/workflow/$workflowId/forms/'
       path: '/admin/workflow/$workflowId/forms'
@@ -85,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/workflowInstances/$instanceId': typeof WorkflowInstancesInstanceIdRoute
   '/workflowInstances': typeof WorkflowInstancesIndexRoute
+  '/admin/workflow/$workflowId/edit': typeof AdminWorkflowWorkflowIdEditRoute
   '/admin/workflow/$workflowId/forms': typeof AdminWorkflowWorkflowIdFormsIndexRoute
 }
 
@@ -92,6 +108,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/workflowInstances/$instanceId': typeof WorkflowInstancesInstanceIdRoute
   '/workflowInstances': typeof WorkflowInstancesIndexRoute
+  '/admin/workflow/$workflowId/edit': typeof AdminWorkflowWorkflowIdEditRoute
   '/admin/workflow/$workflowId/forms': typeof AdminWorkflowWorkflowIdFormsIndexRoute
 }
 
@@ -100,6 +117,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/workflowInstances/$instanceId': typeof WorkflowInstancesInstanceIdRoute
   '/workflowInstances/': typeof WorkflowInstancesIndexRoute
+  '/admin/workflow/$workflowId/edit': typeof AdminWorkflowWorkflowIdEditRoute
   '/admin/workflow/$workflowId/forms/': typeof AdminWorkflowWorkflowIdFormsIndexRoute
 }
 
@@ -109,18 +127,21 @@ export interface FileRouteTypes {
     | '/'
     | '/workflowInstances/$instanceId'
     | '/workflowInstances'
+    | '/admin/workflow/$workflowId/edit'
     | '/admin/workflow/$workflowId/forms'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/workflowInstances/$instanceId'
     | '/workflowInstances'
+    | '/admin/workflow/$workflowId/edit'
     | '/admin/workflow/$workflowId/forms'
   id:
     | '__root__'
     | '/'
     | '/workflowInstances/$instanceId'
     | '/workflowInstances/'
+    | '/admin/workflow/$workflowId/edit'
     | '/admin/workflow/$workflowId/forms/'
   fileRoutesById: FileRoutesById
 }
@@ -129,6 +150,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   WorkflowInstancesInstanceIdRoute: typeof WorkflowInstancesInstanceIdRoute
   WorkflowInstancesIndexRoute: typeof WorkflowInstancesIndexRoute
+  AdminWorkflowWorkflowIdEditRoute: typeof AdminWorkflowWorkflowIdEditRoute
   AdminWorkflowWorkflowIdFormsIndexRoute: typeof AdminWorkflowWorkflowIdFormsIndexRoute
 }
 
@@ -136,6 +158,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   WorkflowInstancesInstanceIdRoute: WorkflowInstancesInstanceIdRoute,
   WorkflowInstancesIndexRoute: WorkflowInstancesIndexRoute,
+  AdminWorkflowWorkflowIdEditRoute: AdminWorkflowWorkflowIdEditRoute,
   AdminWorkflowWorkflowIdFormsIndexRoute:
     AdminWorkflowWorkflowIdFormsIndexRoute,
 }
@@ -153,6 +176,7 @@ export const routeTree = rootRoute
         "/",
         "/workflowInstances/$instanceId",
         "/workflowInstances/",
+        "/admin/workflow/$workflowId/edit",
         "/admin/workflow/$workflowId/forms/"
       ]
     },
@@ -164,6 +188,9 @@ export const routeTree = rootRoute
     },
     "/workflowInstances/": {
       "filePath": "workflowInstances/index.tsx"
+    },
+    "/admin/workflow/$workflowId/edit": {
+      "filePath": "admin/workflow/$workflowId/edit.tsx"
     },
     "/admin/workflow/$workflowId/forms/": {
       "filePath": "admin/workflow/$workflowId/forms/index.tsx"
