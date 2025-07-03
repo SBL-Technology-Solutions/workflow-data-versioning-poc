@@ -1,8 +1,8 @@
-import { workflowDefinitions } from "@/db/schema";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { desc, eq } from "drizzle-orm";
 import z from "zod";
+import { workflowDefinitions } from "@/db/schema";
 
 export async function getWorkflowDefinitions() {
 	const { db } = await import("../db");
