@@ -11,6 +11,8 @@ Dynamic Forms and Schema Versioning
 
   - [x] Buttons: Save/Next/Previous (depending on what's available)
   - [x] Create a new form_data_version (if doesn't exist) and update the current_state / status in DB
+  - [x] Ability to create a new workflow instance
+  - [ ] FIX: Xstate handling of workflow to hydrate the state from the DB, send the event and persist the updated state
   - [ ] Define initial workflow states and transitions
   - [ ] Implement state persistence in database
   - [ ] Add ability to version workflow definitions
