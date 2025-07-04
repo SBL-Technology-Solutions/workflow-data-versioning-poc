@@ -63,6 +63,23 @@ export const DynamicForm = ({
 			});
 		},
 	});
+
+	const saveFormData = useMutation({
+		mutationFn: (data: Record<string, string>) =>
+			createDataVersionServerFn({
+				data: {
+					workflowInstanceId: workflowInstance.id,
+					formDefId,
+					data,
+				},
+			}),
+		onSuccess: () => {
+			toast.success("Form definition saved successfully");
+		},
+		onError: () => {
+			toast.error("Failed to save form definition");
+		},
+	});
 	// const pathname = usePathname();
 
 	const validationSchema = createZodValidationSchema(schema);
@@ -71,13 +88,13 @@ export const DynamicForm = ({
 
 	const form = useAppForm({
 		defaultValues: effectiveInitialData,
+		// TODO: LIkely want to swap saveFormData and maybe not leverage onSubmit in case their are multiple events
 		onSubmit: async ({ value }) => {
-			// Do something with form data
-			console.log(value);
-			await onSave(value);
+			saveFormData.mutate(value);
 		},
 		validators: {
 			onChange: validationSchema,
+			onBlur: validationSchema,
 		},
 	});
 
@@ -87,46 +104,10 @@ export const DynamicForm = ({
 		value: workflowInstance.currentState,
 	});
 	console.log("resolvedState: ", resolvedState);
-	// const workflowActor = createActor(workflowMachine, {
-	// 	snapshot: resolvedState,
-	// }).start();
 
 	const nextEvents = __unsafe_getAllOwnEventDescriptors(resolvedState);
 	console.log("nextEvents: ", nextEvents);
 	console.log("form state: ", form.state);
-
-	// const nextState = transition(workflowMachine, resolvedState, { type: "NEXT" });
-	// console.log("nextState: ", nextState);
-
-	// workflowActor.getSnapshot().nextEvents
-
-	// workflowActor.subscribe(async (snapshot) => {
-	// 	console.log("subscription state value: ", snapshot.value);
-
-	// 	await updateWorkflowStateServerFn({
-	// 		data: {
-	// 			id: workflowInstance.id,
-	// 			newState: snapshot.value.toString(),
-	// 		},
-	// 	});
-	// 	// replace(`${pathname}`);
-	// });
-
-	async function onSave(data: Record<string, string>) {
-		try {
-			//TODO: add RQ mutation
-			await createDataVersionServerFn({
-				data: {
-					workflowInstanceId: workflowInstance.id,
-					formDefId,
-					data,
-				},
-			});
-			toast.success("Form definition saved successfully");
-		} catch (error) {
-			toast.error("Failed to save form definition");
-		}
-	}
 
 	const renderField = (fieldMeta: FormSchema["fields"][number]) => (
 		<form.AppField
