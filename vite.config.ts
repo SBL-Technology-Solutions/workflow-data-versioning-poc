@@ -8,7 +8,7 @@ export default defineConfig({
 		tailwindcss(),
 		tsconfigPaths(),
 		tanstackStart({
-			target: "vercel",
+			target: "netlify",
 		}),
 	],
 });
