@@ -1,8 +1,10 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { desc, eq } from "drizzle-orm";
+import { createActor, createMachine, StateMachine } from "xstate";
 import { z } from "zod";
 import { workflowDefinitions, workflowInstances } from "../db/schema";
+import { createDataVersion } from "./formDataVersions";
 export async function getWorkflowInstance(id: number) {
 	const { db } = await import("../db");
 	const result = await db
@@ -108,7 +110,7 @@ export const updateWorkflowStateServerFn = createServerFn({
 
 export async function createWorkflowInstance(workflowDefId: number) {
 	const { db } = await import("../db");
-	
+
 	// First, get the workflow definition to extract the initial state
 	const workflowDef = await db
 		.select()
@@ -122,7 +124,8 @@ export async function createWorkflowInstance(workflowDefId: number) {
 
 	// Extract initial state from the machine config
 	const machineConfig = workflowDef[0].machineConfig as any;
-	const initialState = machineConfig.initial || Object.keys(machineConfig.states)[0];
+	const initialState =
+		machineConfig.initial || Object.keys(machineConfig.states)[0];
 
 	const result = await db
 		.insert(workflowInstances)
@@ -146,4 +149,70 @@ export const createWorkflowInstanceServerFn = createServerFn({
 	)
 	.handler(async ({ data: { workflowDefId } }) => {
 		return createWorkflowInstance(workflowDefId);
-	});	
+	});
+
+export const sendWorkflowEvent = async (
+	instanceId: number,
+	formDefId: number,
+	event: string,
+	formData: Record<string, string>,
+) => {
+	const { db } = await import("../db");
+
+	// get the workflow instance
+	const workflowInstance = await getWorkflowInstance(instanceId);
+
+	// Save the form data to the db
+	await createDataVersion(workflowInstance.id, formDefId, formData);
+
+	// create the xstate actor based on the machine config and the current state
+	const workflowMachine = createMachine(
+		workflowInstance.machineConfig as Record<string, any>,
+	);
+	const resolvedState = workflowMachine.resolveState({
+		value: workflowInstance.currentState,
+	});
+	console.log("resolvedState", resolvedState);
+	const restoredActor = createActor(workflowMachine, {
+		snapshot: resolvedState,
+	});
+
+	// start the actor
+	restoredActor.start();
+
+	// send the event to the actor
+	//TODO: Need to handle errors here
+	restoredActor.send({ type: event });
+
+	// get the current state
+	const currentState = restoredActor.getPersistedSnapshot();
+	console.log("currentState", (currentState as any).value);
+
+	// persit the updated state to the db
+	const result = await db
+		.update(workflowInstances)
+		.set({
+			currentState: (currentState as any).value,
+			updatedAt: new Date(),
+		})
+		.where(eq(workflowInstances.id, instanceId))
+		.returning();
+	console.log("result after persisting", result);
+	restoredActor.stop();
+	return result[0];
+};
+
+export const sendWorkflowEventServerFn = createServerFn({
+	method: "POST",
+})
+	.validator(
+		z.object({
+			instanceId: z.number(),
+			event: z.string(),
+			formDefId: z.number(),
+			formData: z.record(z.string(), z.string()),
+		}),
+	)
+	.handler(async ({ data: { instanceId, event, formData, formDefId } }) => {
+		return sendWorkflowEvent(instanceId, formDefId, event, formData);
+	});

@@ -1,17 +1,18 @@
-import { Button } from "./ui/button";
-
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-
+import { toast } from "sonner";
+import { __unsafe_getAllOwnEventDescriptors, createMachine } from "xstate";
 import { createDataVersionServerFn } from "@/data/formDataVersions";
-import { updateWorkflowStateServerFn, type WorkflowInstance } from "@/data/workflowInstances";
 import {
-	type FormSchema,
+	sendWorkflowEventServerFn,
+	type WorkflowInstance,
+} from "@/data/workflowInstances";
+import {
 	createZodValidationSchema,
+	type FormSchema,
 	makeInitialValues,
 } from "@/types/form";
-import type { AnyFieldApi } from "@tanstack/react-form";
-import { toast } from "sonner";
-import { createActor, createMachine } from "xstate";
+import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useAppForm } from "./ui/tanstack-form";
 import { Textarea } from "./ui/textarea";
@@ -34,6 +35,51 @@ export const DynamicForm = ({
 	machineConfig,
 }: DynamicFormProps) => {
 	const navigate = useNavigate();
+	const queryClient = useQueryClient();
+	const sendWorkflowEvent = useMutation({
+		mutationFn: (event: string) =>
+			sendWorkflowEventServerFn({
+				data: {
+					instanceId: workflowInstance.id,
+					event,
+					formDefId,
+					formData: form.state.values,
+				},
+			}),
+		onSuccess: (result) => {
+			queryClient.invalidateQueries({
+				queryKey: ["workflowInstance", workflowInstance.id],
+			});
+			toast.success("Event sent successfully");
+			// update path to next state
+			navigate({
+				to: "/workflowInstances/$instanceId",
+				params: {
+					instanceId: workflowInstance.id.toString(),
+				},
+				search: {
+					state: result.currentState,
+				},
+			});
+		},
+	});
+
+	const saveFormData = useMutation({
+		mutationFn: (data: Record<string, string>) =>
+			createDataVersionServerFn({
+				data: {
+					workflowInstanceId: workflowInstance.id,
+					formDefId,
+					data,
+				},
+			}),
+		onSuccess: () => {
+			toast.success("Form definition saved successfully");
+		},
+		onError: () => {
+			toast.error("Failed to save form definition");
+		},
+	});
 	// const pathname = usePathname();
 
 	const validationSchema = createZodValidationSchema(schema);
@@ -42,54 +88,26 @@ export const DynamicForm = ({
 
 	const form = useAppForm({
 		defaultValues: effectiveInitialData,
+		// TODO: LIkely want to swap saveFormData and maybe not leverage onSubmit in case their are multiple events
 		onSubmit: async ({ value }) => {
-			// Do something with form data
-			console.log(value);
-			await onSave(value);
+			saveFormData.mutate(value);
 		},
 		validators: {
 			onChange: validationSchema,
+			onBlur: validationSchema,
 		},
 	});
 
 	const workflowMachine = createMachine(machineConfig);
-	const resolvedState = workflowMachine.resolveState(
-		{
-			value: workflowInstance.currentState,
-		},
-	);
-	console.log("resolvedState: ", resolvedState);
-	const workflowActor = createActor(workflowMachine, {
-		snapshot: resolvedState,
-	}).start();
 
-	workflowActor.subscribe(async (snapshot) => {
-		console.log("subscription state value: ", snapshot.value);
-
-		await updateWorkflowStateServerFn({
-			data: {
-				id: workflowInstance.id,
-				newState: snapshot.value.toString(),
-			},
-		});
-		// replace(`${pathname}`);
+	const resolvedState = workflowMachine.resolveState({
+		value: workflowInstance.currentState,
 	});
+	console.log("resolvedState: ", resolvedState);
 
-	async function onSave(data: Record<string, string>) {
-		try {
-			//TODO: add RQ mutation
-			await createDataVersionServerFn({
-				data: {
-					workflowInstanceId: workflowInstance.id,
-					formDefId,
-					data,
-				},
-			});
-			toast.success("Form definition saved successfully");
-		} catch (error) {
-			toast.error("Failed to save form definition");
-		}
-	}
+	const nextEvents = __unsafe_getAllOwnEventDescriptors(resolvedState);
+	console.log("nextEvents: ", nextEvents);
+	console.log("form state: ", form.state);
 
 	const renderField = (fieldMeta: FormSchema["fields"][number]) => (
 		<form.AppField
@@ -151,14 +169,23 @@ export const DynamicForm = ({
 				{schema.fields.map((field) => renderField(field))}
 				<div className="flex space-x-2">
 					<Button type="submit">Save</Button>
-					{workflowActor.getSnapshot().can({ type: "NEXT" }) && (
-						<Button
-							type="button"
-							onClick={() => workflowActor.send({ type: "NEXT" })}
-						>
-							Next
-						</Button>
-					)}
+					<div className="flex space-x-2">
+						{nextEvents.length === 0
+							? null
+							: nextEvents.map((evt) => (
+									<Button
+										type="button"
+										key={evt}
+										onClick={() => sendWorkflowEvent.mutate(evt)}
+										disabled={
+											//TODO: Form state isValid is not working as the form state is always valid
+											sendWorkflowEvent.isPending || !form.state.isValid
+										}
+									>
+										{evt}
+									</Button>
+								))}
+					</div>
 				</div>
 			</form>
 		</form.AppForm>
