@@ -1,9 +1,3 @@
-import { DynamicForm } from "@/components/DynamicForm";
-import { StateSelector } from "@/components/StateSelector";
-import { latestCurrentFormDataQueryOptions } from "@/data/formDataVersions";
-import { getCurrentFormForInstanceQueryOptions } from "@/data/formDefinitions";
-import { getWorkflowDefinitionQueryOptions } from "@/data/workflowDefinitions";
-import { fetchWorkflowInstanceQueryOptions } from "@/data/workflowInstances";
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import {
 	createFileRoute,
@@ -11,6 +5,12 @@ import {
 	useSearch,
 } from "@tanstack/react-router";
 import { z } from "zod";
+import { DynamicForm } from "@/components/DynamicForm";
+import { StateSelector } from "@/components/StateSelector";
+import { latestCurrentFormDataQueryOptions } from "@/data/formDataVersions";
+import { getCurrentFormForInstanceQueryOptions } from "@/data/formDefinitions";
+import { getWorkflowDefinitionQueryOptions } from "@/data/workflowDefinitions";
+import { fetchWorkflowInstanceQueryOptions } from "@/data/workflowInstances";
 
 const workflowInstanceSearchSchema = z.object({
 	state: z.string().catch(""),
@@ -35,13 +35,12 @@ function RouteComponent() {
 	const { instanceId } = Route.useParams();
 	const { state } = useSearch({ from: "/workflowInstances/$instanceId" });
 	const navigate = useNavigate();
-	if (!instanceId) return <div>🌀 No workflow instance ID in URL</div>;
 
 	const {
 		data: workflowInstance,
 		isLoading: isWorkflowInstanceLoading,
 		isError: isWorkflowInstanceError,
-	} = useSuspenseQuery(fetchWorkflowInstanceQueryOptions(instanceId));
+	} = useSuspenseQuery(fetchWorkflowInstanceQueryOptions(instanceId || ""));
 
 	const {
 		data: workflowDefinition,
@@ -52,6 +51,51 @@ function RouteComponent() {
 		enabled: !!workflowInstance,
 	});
 
+	// Get all possible states from the machine config
+	const allStates = Object.keys(
+		workflowDefinition?.machineConfig?.states || {},
+	);
+	// Only allow selection of states up to the current state
+	const availableStates = allStates.slice(
+		0,
+		allStates.indexOf(workflowInstance?.currentState || "") + 1,
+	);
+	const currentState = state || workflowInstance?.currentState || "";
+
+	const handleStateChange = (newState: string) => {
+		navigate({
+			to: "/workflowInstances/$instanceId",
+			params: { instanceId: instanceId || "" },
+			search: { state: newState },
+		});
+	};
+
+	const {
+		data: currentForm,
+		isLoading: isCurrentFormLoading,
+		isError: isCurrentFormError,
+	} = useQuery({
+		...getCurrentFormForInstanceQueryOptions(
+			Number(instanceId || "0"),
+			currentState,
+		),
+		enabled: !!workflowInstance,
+	});
+
+	const {
+		data: latestCurrentFormData,
+		isLoading: isLatestCurrentFormDataLoading,
+		isError: isLatestCurrentFormDataError,
+	} = useQuery({
+		...latestCurrentFormDataQueryOptions(
+			Number(instanceId || "0"),
+			currentForm?.formDefId ?? -1,
+		),
+		enabled: !!currentForm?.formDefId,
+	});
+
+	// Early returns after all hooks are called
+	if (!instanceId) return <div>🌀 No workflow instance ID in URL</div>;
 	if (isWorkflowInstanceLoading) return <div>Loading...</div>;
 	if (isWorkflowInstanceError)
 		return <div>Error loading workflow instance</div>;
@@ -63,45 +107,7 @@ function RouteComponent() {
 	if (!workflowDefinition?.machineConfig)
 		return <div>No machine config found</div>;
 
-	// Get all possible states from the machine config
-	const allStates = Object.keys(workflowDefinition.machineConfig.states);
-	// Only allow selection of states up to the current state
-	const availableStates = allStates.slice(
-		0,
-		allStates.indexOf(workflowInstance.currentState) + 1,
-	);
-	const currentState = state || workflowInstance.currentState;
-
 	console.log("currentState", currentState);
-
-	const handleStateChange = (newState: string) => {
-		navigate({
-			to: "/workflowInstances/$instanceId",
-			params: { instanceId },
-			search: { state: newState },
-		});
-	};
-
-	const {
-		data: currentForm,
-		isLoading: isCurrentFormLoading,
-		isError: isCurrentFormError,
-	} = useQuery({
-		...getCurrentFormForInstanceQueryOptions(Number(instanceId), currentState),
-		enabled: !!workflowInstance,
-	});
-
-	const {
-		data: latestCurrentFormData,
-		isLoading: isLatestCurrentFormDataLoading,
-		isError: isLatestCurrentFormDataError,
-	} = useQuery({
-		...latestCurrentFormDataQueryOptions(
-			Number(instanceId),
-			currentForm?.formDefId ?? -1,
-		),
-		enabled: !!currentForm?.formDefId,
-	});
 
 	if (isCurrentFormLoading) return <div>Loading...</div>;
 	if (isCurrentFormError) return <div>Error loading current form</div>;
