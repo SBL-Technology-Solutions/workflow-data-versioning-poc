@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { toast } from "sonner";
-import { __unsafe_getAllOwnEventDescriptors, createMachine } from "xstate";
 import { createDataVersionServerFn } from "@/data/formDataVersions";
 import {
 	sendWorkflowEventServerFn,
 	type WorkflowInstance,
 } from "@/data/workflowInstances";
+import { getNextEvents } from "@/lib/workflow";
 import {
 	createZodValidationSchema,
 	type FormSchema,
@@ -98,21 +99,16 @@ export const DynamicForm = ({
 		},
 	});
 
-	const workflowMachine = createMachine(machineConfig);
-
-	const resolvedState = workflowMachine.resolveState({
-		value: workflowInstance.currentState,
-	});
-	console.log("resolvedState: ", resolvedState);
-
-	const nextEvents = __unsafe_getAllOwnEventDescriptors(resolvedState);
-	console.log("nextEvents: ", nextEvents);
-	console.log("form state: ", form.state);
+	const nextEvents = useMemo(
+		() => getNextEvents(machineConfig, workflowInstance),
+		[machineConfig, workflowInstance],
+	);
 
 	const renderField = (fieldMeta: FormSchema["fields"][number]) => (
 		<form.AppField
 			key={fieldMeta.name}
 			name={fieldMeta.name}
+			// biome-ignore lint/correctness/noChildrenProp: this is how tanstack form works
 			children={(field) => (
 				<div className="space-y-2">
 					<field.FormItem>
