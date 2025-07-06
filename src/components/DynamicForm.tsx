@@ -24,9 +24,13 @@ interface DynamicFormProps {
 	initialData?: Record<string, string>;
 	workflowInstance: WorkflowInstance;
 	formDefId: number;
-	//improve this typing
+	//TODO: improve this typing
 	machineConfig: Record<string, unknown>;
 }
+
+const defaultSubmitMeta: { event: string | null } = {
+	event: null,
+};
 
 export const DynamicForm = ({
 	schema,
@@ -92,22 +96,26 @@ export const DynamicForm = ({
 		[initialData, schema],
 	);
 
+	const nextEvents = useMemo(
+		() => getNextEvents(machineConfig, workflowInstance),
+		[machineConfig, workflowInstance],
+	);
+
 	const form = useAppForm({
 		defaultValues: effectiveInitialData,
-		// TODO: Update submission to use tanstack form multi form submit meta - https://tanstack.com/form/latest/docs/framework/react/guides/submission-handling
-		onSubmit: async ({ value }) => {
-			saveFormData.mutate(value);
+		onSubmitMeta: defaultSubmitMeta,
+		onSubmit: async ({ value, meta }) => {
+			if (meta.event) {
+				sendWorkflowEvent.mutate(meta.event);
+			} else {
+				saveFormData.mutate(value);
+			}
 		},
 		validators: {
 			onChange: validationSchema,
 			onMount: validationSchema,
 		},
 	});
-
-	const nextEvents = useMemo(
-		() => getNextEvents(machineConfig, workflowInstance),
-		[machineConfig, workflowInstance],
-	);
 
 	const renderField = (fieldMeta: FormSchema["fields"][number]) => (
 		<form.AppField
@@ -160,7 +168,6 @@ export const DynamicForm = ({
 				onSubmit={(e) => {
 					e.preventDefault();
 					e.stopPropagation();
-					form.handleSubmit();
 				}}
 			>
 				{schema.title ? (
@@ -184,14 +191,18 @@ export const DynamicForm = ({
 							<div className="flex space-x-2">
 								{nextEvents.length === 0
 									? null
-									: nextEvents.map((evt) => (
+									: nextEvents.map((event) => (
 											<Button
 												type="submit"
-												key={evt}
-												onClick={() => sendWorkflowEvent.mutate(evt)}
+												key={event}
+												onClick={() =>
+													form.handleSubmit({
+														event,
+													})
+												}
 												disabled={sendWorkflowEvent.isPending || !canSubmit}
 											>
-												{sendWorkflowEvent.isPending ? "Submitting..." : evt}
+												{sendWorkflowEvent.isPending ? "Submitting..." : event}
 											</Button>
 										))}
 							</div>
