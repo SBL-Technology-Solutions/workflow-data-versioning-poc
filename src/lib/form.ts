@@ -91,14 +91,14 @@ export function createZodValidationSchema<T extends FormSchema>(
 			case "textarea": {
 				let s: z.ZodString = z.string();
 				if (field.required)
-					s = s.min(1, { message: `${field.label} is required` });
+					s = s.nonempty({ message: `${field.label} is required` });
 				if (field.minLength != null)
 					s = s.min(field.minLength, {
-						message: `${field.label} must be at least ${field.minLength}`,
+						message: `${field.label} must be at least ${field.minLength} characters long`,
 					});
 				if (field.maxLength != null)
 					s = s.max(field.maxLength, {
-						message: `${field.label} must be at most ${field.maxLength}`,
+						message: `${field.label} must be at most ${field.maxLength} characters long`,
 					});
 				if (field.type === "text" && field.pattern) {
 					s = s.regex(new RegExp(field.pattern), {
@@ -159,11 +159,11 @@ function emptyValueForField(f: FormFieldSchema): string {
 export function makeInitialValues<T extends FormSchema>(
 	form: T,
 ): Record<T["fields"][number]["name"], string> {
-	return form.fields.reduce(
-		(acc, field) => {
-			acc[field.name] = emptyValueForField(field);
-			return acc;
-		},
-		{} as Record<string, string>,
-	);
+	const initialValues: Record<string, string> = {};
+
+	for (const field of form.fields) {
+		initialValues[field.name] = emptyValueForField(field);
+	}
+
+	return initialValues;
 }
