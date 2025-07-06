@@ -55,6 +55,8 @@ const useFieldContext = () => {
 	const { name, store, ...fieldContext } = _useFieldContext();
 
 	const errors = useStore(store, (state) => state.meta.errors);
+	const isBlurred = useStore(store, (state) => state.meta.isBlurred);
+
 	if (!fieldContext) {
 		throw new Error("useFieldContext should be used within <FormItem>");
 	}
@@ -67,6 +69,7 @@ const useFieldContext = () => {
 		formMessageId: `${id}-form-item-message`,
 		errors,
 		store,
+		isBlurred,
 		...fieldContext,
 	};
 };
@@ -75,12 +78,12 @@ function FormLabel({
 	className,
 	...props
 }: React.ComponentProps<typeof Label>) {
-	const { formItemId, errors } = useFieldContext();
+	const { formItemId, errors, isBlurred } = useFieldContext();
 
 	return (
 		<Label
 			data-slot="form-label"
-			data-error={!!errors.length}
+			data-error={!!errors.length && isBlurred}
 			className={cn("data-[error=true]:text-destructive", className)}
 			htmlFor={formItemId}
 			{...props}
@@ -89,7 +92,7 @@ function FormLabel({
 }
 
 function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
-	const { errors, formItemId, formDescriptionId, formMessageId } =
+	const { errors, formItemId, formDescriptionId, formMessageId, isBlurred } =
 		useFieldContext();
 
 	return (
@@ -97,11 +100,11 @@ function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
 			data-slot="form-control"
 			id={formItemId}
 			aria-describedby={
-				!errors.length
+				!errors.length && isBlurred
 					? `${formDescriptionId}`
 					: `${formDescriptionId} ${formMessageId}`
 			}
-			aria-invalid={!!errors.length}
+			aria-invalid={!!errors.length && isBlurred}
 			{...props}
 		/>
 	);
@@ -121,10 +124,11 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
 }
 
 function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
-	const { errors, formMessageId } = useFieldContext();
-	const body = errors.length
-		? String(errors.at(0)?.message ?? "")
-		: props.children;
+	const { errors, formMessageId, isBlurred } = useFieldContext();
+	const body =
+		errors.length && isBlurred
+			? String(errors.at(0)?.message ?? "")
+			: props.children;
 	if (!body) return null;
 
 	return (

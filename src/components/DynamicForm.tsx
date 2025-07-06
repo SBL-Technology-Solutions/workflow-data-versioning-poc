@@ -82,19 +82,25 @@ export const DynamicForm = ({
 		},
 	});
 
-	const validationSchema = createZodValidationSchema(schema);
+	const validationSchema = useMemo(
+		() => createZodValidationSchema(schema),
+		[schema],
+	);
 
-	const effectiveInitialData = initialData ?? makeInitialValues(schema);
+	const effectiveInitialData = useMemo(
+		() => initialData ?? makeInitialValues(schema),
+		[initialData, schema],
+	);
 
 	const form = useAppForm({
 		defaultValues: effectiveInitialData,
-		// TODO: LIkely want to swap saveFormData and maybe not leverage onSubmit in case their are multiple events
+		// TODO: Update submission to use tanstack form multi form submit meta - https://tanstack.com/form/latest/docs/framework/react/guides/submission-handling
 		onSubmit: async ({ value }) => {
 			saveFormData.mutate(value);
 		},
 		validators: {
 			onChange: validationSchema,
-			onBlur: validationSchema,
+			onMount: validationSchema,
 		},
 	});
 
@@ -135,6 +141,7 @@ export const DynamicForm = ({
 								id={field.name}
 								value={field.state.value}
 								onChange={(e) => field.handleChange(e.target.value)}
+								onBlur={field.handleBlur}
 								type={fieldMeta.type}
 								placeholder={fieldMeta.description}
 							/>
@@ -152,6 +159,7 @@ export const DynamicForm = ({
 				className="flex flex-col gap-6"
 				onSubmit={(e) => {
 					e.preventDefault();
+					e.stopPropagation();
 					form.handleSubmit();
 				}}
 			>
@@ -162,26 +170,34 @@ export const DynamicForm = ({
 					<p className="text-muted-foreground">{schema.description}</p>
 				) : null}
 				{schema.fields.map((field) => renderField(field))}
-				<div className="flex space-x-2">
-					<Button type="submit">Save</Button>
-					<div className="flex space-x-2">
-						{nextEvents.length === 0
-							? null
-							: nextEvents.map((evt) => (
-									<Button
-										type="button"
-										key={evt}
-										onClick={() => sendWorkflowEvent.mutate(evt)}
-										disabled={
-											//TODO: Form state isValid is not working as the form state is always valid
-											sendWorkflowEvent.isPending || !form.state.isValid
-										}
-									>
-										{evt}
-									</Button>
-								))}
-					</div>
-				</div>
+				<form.Subscribe selector={(state) => state.canSubmit}>
+					{(canSubmit) => (
+						<div className="flex space-x-2">
+							<Button
+								type="button"
+								disabled={saveFormData.isPending}
+								variant="outline"
+								onClick={() => saveFormData.mutate(form.state.values)}
+							>
+								{saveFormData.isPending ? "Saving..." : "Save"}
+							</Button>
+							<div className="flex space-x-2">
+								{nextEvents.length === 0
+									? null
+									: nextEvents.map((evt) => (
+											<Button
+												type="submit"
+												key={evt}
+												onClick={() => sendWorkflowEvent.mutate(evt)}
+												disabled={sendWorkflowEvent.isPending || !canSubmit}
+											>
+												{sendWorkflowEvent.isPending ? "Submitting..." : evt}
+											</Button>
+										))}
+							</div>
+						</div>
+					)}
+				</form.Subscribe>
 			</form>
 		</form.AppForm>
 	);
