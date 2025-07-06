@@ -1,12 +1,12 @@
-import { formDataVersions } from "@/db/schema";
-import { createJSONPatch } from "@/lib/jsonPatch";
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq } from "drizzle-orm";
 import z from "zod";
+import { formDataVersions } from "@/db/schema";
+import { createJSONPatch } from "@/lib/jsonPatch";
 
 export async function getFormDataVersions() {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 	return await db.query.formDataVersions.findMany({
 		orderBy: desc(formDataVersions.createdAt),
 		limit: 5,
@@ -29,7 +29,7 @@ export async function getLatestCurrentFormData(
 	workflowInstanceId: number,
 	formDefId: number,
 ) {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 
 	const result = await db
 		.select({
@@ -89,7 +89,7 @@ export async function createDataVersion(
 	console.log("data: ", data);
 	let patch = data; // First version stores full data as patch
 
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 	const previousData = await db
 		.select()
 		.from(formDataVersions)

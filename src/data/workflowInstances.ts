@@ -6,7 +6,7 @@ import { z } from "zod";
 import { workflowDefinitions, workflowInstances } from "../db/schema";
 import { createDataVersion } from "./formDataVersions";
 export async function getWorkflowInstance(id: number) {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 	const result = await db
 		.select({
 			id: workflowInstances.id,
@@ -60,7 +60,7 @@ export const fetchWorkflowInstanceQueryOptions = (instanceId: string) =>
 	});
 
 export async function listWorkflowInstances() {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 	return await db
 		.select()
 		.from(workflowInstances)
@@ -82,7 +82,7 @@ export const workflowInstancesQueryOptions = () =>
 	});
 
 export async function updateWorkflowState(id: number, newState: string) {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 	const result = await db
 		.update(workflowInstances)
 		.set({
@@ -109,7 +109,7 @@ export const updateWorkflowStateServerFn = createServerFn({
 	});
 
 export async function createWorkflowInstance(workflowDefId: number) {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 
 	// First, get the workflow definition to extract the initial state
 	const workflowDef = await db
@@ -157,7 +157,7 @@ export const sendWorkflowEvent = async (
 	event: string,
 	formData: Record<string, string>,
 ) => {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 
 	// get the workflow instance
 	const workflowInstance = await getWorkflowInstance(instanceId);

@@ -1,15 +1,15 @@
+import { createServerFn } from "@tanstack/react-start";
+import { and, desc, eq } from "drizzle-orm";
+import z from "zod";
 import {
 	formDataVersions,
 	formDefinitions,
 	workflowInstances,
 } from "@/db/schema";
 import { type FormSchema, FormSchema as zodFormSchema } from "@/types/form";
-import { createServerFn } from "@tanstack/react-start";
-import { and, desc, eq } from "drizzle-orm";
-import z from "zod";
 
 export async function getFormDefinitions() {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 	return await db.query.formDefinitions.findMany({
 		orderBy: desc(formDefinitions.createdAt),
 		limit: 5,
@@ -33,7 +33,7 @@ export async function getCurrentFormForInstance(
 	workflowInstanceId: number,
 	state: string,
 ) {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 
 	// First get the workflow instance to get its workflowDefId
 	const instance = await db
@@ -84,7 +84,7 @@ export async function getCurrentFormForDefinition(
 	workflowDefId: number,
 	state: string,
 ) {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 
 	const result = await db
 		.select({
@@ -159,7 +159,7 @@ export async function createFormVersion(
 	state: string,
 	schema: FormSchema,
 ) {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 
 	const currentVersion = await db
 		.select()

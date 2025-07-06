@@ -1,4 +1,4 @@
-import { db } from "@/db";
+import { dbClient } from "@/db";
 import {
 	formDefinitions,
 	workflowDefinitions,
@@ -9,7 +9,7 @@ import { FormSchema } from "@/types/form";
 async function seed() {
 	try {
 		// Create a workflow definition
-		const [workflow] = await db
+		const [workflow] = await dbClient
 			.insert(workflowDefinitions)
 			.values({
 				name: "Sample Workflow",
@@ -61,7 +61,7 @@ async function seed() {
 			],
 		});
 
-		await db.insert(formDefinitions).values({
+		await dbClient.insert(formDefinitions).values({
 			workflowDefId: workflow.id,
 			state: "form1",
 			version: 1,
@@ -69,7 +69,7 @@ async function seed() {
 		});
 
 		// Create a sample workflow instance
-		await db.insert(workflowInstances).values({
+		await dbClient.insert(workflowInstances).values({
 			workflowDefId: workflow.id,
 			currentState: "form1",
 			status: "active",

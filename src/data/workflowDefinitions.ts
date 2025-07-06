@@ -5,7 +5,7 @@ import z from "zod";
 import { workflowDefinitions } from "@/db/schema";
 
 export async function getWorkflowDefinitions() {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 	return await db.query.workflowDefinitions.findMany({
 		orderBy: desc(workflowDefinitions.createdAt),
 		limit: 5,
@@ -25,7 +25,7 @@ export const workflowDefinitionsQueryOptions = () => ({
 });
 
 export async function getWorkflowDefinition(id: number) {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 	const workflows = await db
 		.select()
 		.from(workflowDefinitions)
