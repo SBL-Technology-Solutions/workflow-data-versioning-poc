@@ -1,7 +1,10 @@
 import pkg from "fast-json-patch";
+
 const { compare } = pkg;
 
-// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-export function createJSONPatch(oldObj: any, newObj: any) {
+export function createJSONPatch(
+	oldObj: Record<string, string>,
+	newObj: Record<string, string>,
+) {
 	return compare(oldObj, newObj);
 }

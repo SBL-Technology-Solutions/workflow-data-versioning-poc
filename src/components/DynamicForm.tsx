@@ -42,13 +42,19 @@ export const DynamicForm = ({
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const sendWorkflowEvent = useMutation({
-		mutationFn: (event: string) =>
+		mutationFn: ({
+			event,
+			formData,
+		}: {
+			event: string;
+			formData: Record<string, string>;
+		}) =>
 			sendWorkflowEventServerFn({
 				data: {
 					instanceId: workflowInstance.id,
 					event,
 					formDefId,
-					formData: form.state.values,
+					formData,
 				},
 			}),
 		onSuccess: (result) => {
@@ -106,7 +112,7 @@ export const DynamicForm = ({
 		onSubmitMeta: defaultSubmitMeta,
 		onSubmit: async ({ value, meta }) => {
 			if (meta.event) {
-				sendWorkflowEvent.mutate(meta.event);
+				sendWorkflowEvent.mutate({ event: meta.event, formData: value });
 			} else {
 				saveFormData.mutate(value);
 			}

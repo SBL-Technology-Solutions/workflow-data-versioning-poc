@@ -201,3 +201,19 @@ export const createFormVersionServerFn = createServerFn({
 	.handler(async ({ data: { workflowDefId, state, schema } }) =>
 		createFormVersion(workflowDefId, state, schema),
 	);
+
+// get form schema from formDefId
+export async function getFormSchema(formDefId: number) {
+	const { dbClient } = await import("../db");
+	const formDefinition = await dbClient
+		.select()
+		.from(formDefinitions)
+		.where(eq(formDefinitions.id, formDefId))
+		.limit(1);
+
+	if (!formDefinition.length) {
+		throw new Error(`Form definition with id ${formDefId} not found`);
+	}
+
+	return formDefinition[0].schema;
+}

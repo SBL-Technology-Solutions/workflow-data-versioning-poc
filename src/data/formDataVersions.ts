@@ -1,9 +1,12 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq } from "drizzle-orm";
+import type { Operation } from "fast-json-patch";
 import z from "zod";
 import { formDataVersions } from "@/db/schema";
+import { createZodSchema } from "@/lib/form";
 import { createJSONPatch } from "@/lib/jsonPatch";
+import { getFormSchema } from "./formDefinitions";
 
 export async function getFormDataVersions() {
 	const { dbClient: db } = await import("../db");
@@ -81,16 +84,26 @@ export const latestCurrentFormDataQueryOptions = (
 export async function createDataVersion(
 	workflowInstanceId: number,
 	formDefId: number,
-	// biome-ignore lint/suspicious/noExplicitAny: <explanation>
-	data: any,
+	data: Record<string, string>,
 ) {
-	console.log("workflowInstanceId: ", workflowInstanceId);
-	console.log("formDefId: ", formDefId);
-	console.log("data: ", data);
-	let patch = data; // First version stores full data as patch
+	let patch: Operation[] = []; // First version has no changes to patch
 
-	const { dbClient: db } = await import("../db");
-	const previousData = await db
+	const { dbClient } = await import("../db");
+	// get form schema from formDefId and convert to zod schema
+	const formSchema = await getFormSchema(formDefId);
+	const zodSchema = createZodSchema(formSchema);
+	const partialZodSchema = zodSchema.partial();
+	const parsedData = partialZodSchema.safeParse(data);
+
+	if (!parsedData.success) {
+		const messages = parsedData.error.issues.map((error) => {
+			const path = error.path.join(".") || "<root>";
+			return `${path}: ${error.message}`;
+		});
+		throw new Error(`Invalid data provided: ${messages.join(", ")}`);
+	}
+
+	const previousData = await dbClient
 		.select()
 		.from(formDataVersions)
 		.where(
@@ -102,15 +115,12 @@ export async function createDataVersion(
 		.orderBy(desc(formDataVersions.version))
 		.limit(1);
 
-	console.log("previousData: ", previousData);
-
 	if (previousData.length) {
 		patch = createJSONPatch(previousData[0].data, data);
 	}
-	console.log("patch: ", patch);
 
 	// Returns a plain object as the QueryResult object cannot be passed from server to client
-	const result = await db
+	const result = await dbClient
 		.insert(formDataVersions)
 		.values({
 			workflowInstanceId,

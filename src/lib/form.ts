@@ -81,6 +81,14 @@ type ZodShape<T extends FormSchema> = {
 export function createZodValidationSchema<T extends FormSchema>(
 	form: T,
 ): FormValidateOrFn<FormValues<T>> {
+	const zodSchema = createZodSchema(form);
+	return zodSchema as unknown as FormValidateOrFn<FormValues<T>>;
+}
+
+// Export the actual Zod schema for external validation
+export function createZodSchema<T extends FormSchema>(
+	form: T,
+): z.ZodObject<ZodShape<T>> {
 	// 1) Turn each field into a [name, schema] tuple
 	const entries = form.fields.map((field) => {
 		let schema: z.ZodTypeAny;
@@ -135,8 +143,8 @@ export function createZodValidationSchema<T extends FormSchema>(
 	// 2) Build your shape object in one shot
 	const shape = Object.fromEntries(entries) as ZodShape<T>;
 
-	// 3) Cast it into a ZodObject with the precise FormValues<T> input type
-	return z.object(shape) as unknown as FormValidateOrFn<FormValues<T>>;
+	// 3) Return the ZodObject
+	return z.object(shape);
 }
 
 function emptyValueForField(f: FormFieldSchema): string {
