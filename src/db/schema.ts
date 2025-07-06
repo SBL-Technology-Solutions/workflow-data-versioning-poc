@@ -1,4 +1,3 @@
-import type { FormSchema } from "@/types/form";
 import { relations, sql } from "drizzle-orm";
 import {
 	integer,
@@ -10,6 +9,7 @@ import {
 	varchar,
 } from "drizzle-orm/pg-core";
 import type { z } from "zod";
+import type { FormSchema } from "@/lib/form";
 
 type FormSchemaType = z.infer<typeof FormSchema>;
 

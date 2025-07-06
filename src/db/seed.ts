@@ -4,7 +4,7 @@ import {
 	workflowDefinitions,
 	workflowInstances,
 } from "@/db/schema";
-import { FormSchema } from "@/types/form";
+import { FormSchema } from "@/lib/form";
 
 async function seed() {
 	try {

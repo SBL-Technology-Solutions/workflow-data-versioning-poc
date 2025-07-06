@@ -6,7 +6,7 @@ import {
 	formDefinitions,
 	workflowInstances,
 } from "@/db/schema";
-import { type FormSchema, FormSchema as zodFormSchema } from "@/types/form";
+import { type FormSchema, FormSchema as zodFormSchema } from "@/lib/form";
 
 export async function getFormDefinitions() {
 	const { dbClient: db } = await import("../db");

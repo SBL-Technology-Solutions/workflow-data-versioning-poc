@@ -7,12 +7,12 @@ import {
 	sendWorkflowEventServerFn,
 	type WorkflowInstance,
 } from "@/data/workflowInstances";
-import { getNextEvents } from "@/lib/workflow";
 import {
 	createZodValidationSchema,
 	type FormSchema,
 	makeInitialValues,
-} from "@/types/form";
+} from "@/lib/form";
+import { getNextEvents } from "@/lib/workflow";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useAppForm } from "./ui/tanstack-form";
@@ -81,7 +81,6 @@ export const DynamicForm = ({
 			toast.error("Failed to save form definition");
 		},
 	});
-	// const pathname = usePathname();
 
 	const validationSchema = createZodValidationSchema(schema);
 

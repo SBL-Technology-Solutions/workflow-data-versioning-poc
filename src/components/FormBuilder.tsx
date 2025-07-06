@@ -1,13 +1,13 @@
+import type { AnyFieldApi } from "@tanstack/react-form";
+import { useCallback } from "react";
+import { toast } from "sonner";
 import { createFormVersionServerFn } from "@/data/formDefinitions";
 import {
 	type FormFieldSchema,
 	type FormSchema,
-	FormSchema as ZodFormSchema,
 	makeInitialValues,
-} from "@/types/form";
-import type { AnyFieldApi } from "@tanstack/react-form";
-import { useCallback } from "react";
-import { toast } from "sonner";
+	FormSchema as ZodFormSchema,
+} from "@/lib/form";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Checkbox } from "./ui/checkbox";
@@ -33,7 +33,11 @@ export const FormBuilder = ({
 	initialSchema,
 	workflowId,
 	state,
-}: { initialSchema: FormSchema; workflowId: number; state: string }) => {
+}: {
+	initialSchema: FormSchema;
+	workflowId: number;
+	state: string;
+}) => {
 	const form = useAppForm({
 		defaultValues: initialSchema ?? makeInitialValues(initialSchema),
 		validators: {
