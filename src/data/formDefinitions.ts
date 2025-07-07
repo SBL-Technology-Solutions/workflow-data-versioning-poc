@@ -154,6 +154,61 @@ export const getCurrentFormForDefinitionQueryOptions = (
 		getCurrentFormForDefinitionServerFn({ data: { workflowDefId, state } }),
 });
 
+// Helper: Migrate compatible form data versions to new form definition
+async function migrateCompatibleFormDataVersions(db: any, workflowDefId: number, state: string, schema: FormSchema, newFormDefId: number) {
+	const matchingInstances = await db
+		.select({
+			id: workflowInstances.id,
+			currentState: workflowInstances.currentState,
+		})
+		.from(workflowInstances)
+		.where(
+			and(
+				eq(workflowInstances.workflowDefId, workflowDefId),
+				eq(workflowInstances.currentState, state),
+			),
+		);
+
+	for (const instance of matchingInstances) {
+		const latestData = await db
+			.select({
+				id: formDataVersions.id,
+				formDefId: formDataVersions.formDefId,
+				data: formDataVersions.data,
+				version: formDataVersions.version,
+			})
+			.from(formDataVersions)
+			.innerJoin(
+				formDefinitions,
+				and(
+					eq(formDataVersions.formDefId, formDefinitions.id),
+					eq(formDefinitions.state, state),
+				),
+			)
+			.where(eq(formDataVersions.workflowInstanceId, instance.id))
+			.orderBy(desc(formDataVersions.version))
+			.limit(1);
+
+		if (!latestData.length) continue;
+
+		const oldData = latestData[0].data;
+		const oldFields = Object.keys(oldData);
+		const newFields = schema.fields.map((f) => f.name);
+		const isSuperset = oldFields.every((f) => newFields.includes(f));
+
+		if (isSuperset) {
+			await db.insert(formDataVersions).values({
+				workflowInstanceId: instance.id,
+				formDefId: newFormDefId,
+				version: 1,
+				data: oldData,
+				patch: [],
+				createdBy: "system-migration",
+			});
+		}
+	}
+}
+
 export async function createFormVersion(
 	workflowDefId: number,
 	state: string,
@@ -175,7 +230,7 @@ export async function createFormVersion(
 
 	const nextVersion = currentVersion.length ? currentVersion[0].version + 1 : 1;
 
-	const result = await db
+	const [newFormDef] = await db
 		.insert(formDefinitions)
 		.values({
 			workflowDefId,
@@ -183,9 +238,12 @@ export async function createFormVersion(
 			version: nextVersion,
 			schema,
 		})
-		.returning({ id: formDefinitions.id });
+		.returning({ id: formDefinitions.id, schema: formDefinitions.schema });
 
-	return result;
+	// Migrate compatible form data versions
+	await migrateCompatibleFormDataVersions(db, workflowDefId, state, schema, newFormDef.id);
+
+	return [{ id: newFormDef.id }];
 }
 
 export const createFormVersionServerFn = createServerFn({
