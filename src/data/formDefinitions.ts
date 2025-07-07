@@ -155,8 +155,7 @@ export const getCurrentFormForDefinitionQueryOptions = (
 });
 
 // Helper: Migrate compatible form data versions to new form definition
-async function migrateCompatibleFormDataVersions(db: any, workflowDefId: number, state: string, schema: FormSchema, newFormDefId: number) {
-	const matchingInstances = await db
+async function migrateCompatibleFormDataVersions(db: Awaited<typeof import("../db")>["dbClient"], workflowDefId: number, state: string, schema: FormSchema, newFormDefId: number) {	const matchingInstances = await db
 		.select({
 			id: workflowInstances.id,
 			currentState: workflowInstances.currentState,
@@ -238,11 +237,17 @@ export async function createFormVersion(
 			version: nextVersion,
 			schema,
 		})
-		.returning({ id: formDefinitions.id, schema: formDefinitions.schema });
+		.returning({ id: formDefinitions.id});
 
 	// Migrate compatible form data versions
-	await migrateCompatibleFormDataVersions(db, workflowDefId, state, schema, newFormDef.id);
-
+	try {
+		await migrateCompatibleFormDataVersions(db, workflowDefId, state, schema, newFormDef.id);
+	} catch (error) {
+		console.error('Failed to migrate form data versions:', error);
+		// Consider whether to rollback the form definition creation or just log the error
+		throw new Error(`Form version created but data migration failed: ${error.message}`);
+	}
+	
 	return [{ id: newFormDef.id }];
 }
 
