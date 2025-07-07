@@ -62,13 +62,12 @@ function RouteComponent() {
 		allStates.indexOf(workflowInstance?.currentState || "") + 1,
 	);
 
-	// TODO: update URL with current state on load
 	const currentState = state || workflowInstance?.currentState || "";
 
 	useEffect(() => {
 		// Only update the URL if the state param is missing or empty,
 		// and we have a valid currentState
-		if ((!state || state === "") && currentState) {
+		if (!state && currentState) {
 			navigate({
 				to: "/workflowInstances/$instanceId",
 				params: { instanceId: instanceId || "" },
