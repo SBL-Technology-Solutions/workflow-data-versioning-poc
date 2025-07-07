@@ -237,7 +237,7 @@ export async function createFormVersion(
 			version: nextVersion,
 			schema,
 		})
-		.returning({ id: formDefinitions.id});
+		.returning({ id: formDefinitions.id });
 
 	// Migrate compatible form data versions
 	try {
