@@ -7,11 +7,12 @@ import {
 import { z } from "zod";
 import { DynamicForm } from "@/components/DynamicForm";
 import { StateSelector } from "@/components/StateSelector";
-import { latestCurrentFormDataQueryOptions } from "@/data/formDataVersions";
-import { getCurrentFormForInstanceQueryOptions } from "@/data/formDefinitions";
+// import { latestCurrentFormDataQueryOptions } from "@/data/formDataVersions";
+import { getLatestCompatibleFormDefinitionForInstanceQueryOptions } from "@/data/formDefinitions";
 import { getWorkflowDefinitionQueryOptions } from "@/data/workflowDefinitions";
 import { fetchWorkflowInstanceQueryOptions } from "@/data/workflowInstances";
 import { useEffect } from "react";
+import { latestFormDataForInstanceStateQueryOptions } from "@/data/formDataVersions";
 
 const workflowInstanceSearchSchema = z.object({
 	state: z.string().catch(""),
@@ -91,23 +92,35 @@ function RouteComponent() {
 		isLoading: isCurrentFormLoading,
 		isError: isCurrentFormError,
 	} = useQuery({
-		...getCurrentFormForInstanceQueryOptions(
+		...getLatestCompatibleFormDefinitionForInstanceQueryOptions(
 			Number(instanceId || "0"),
 			currentState,
 		),
 		enabled: !!workflowInstance,
 	});
 
+	// const {
+	// 	data: latestCurrentFormData,
+	// 	isLoading: isLatestCurrentFormDataLoading,
+	// 	isError: isLatestCurrentFormDataError,
+	// } = useQuery({
+	// 	...latestCurrentFormDataQueryOptions(
+	// 		Number(instanceId || "0"),
+	// 		currentForm?.formDefId ?? -1,
+	// 	),
+	// 	enabled: !!currentForm?.formDefId,
+	// });
+
 	const {
-		data: latestCurrentFormData,
-		isLoading: isLatestCurrentFormDataLoading,
-		isError: isLatestCurrentFormDataError,
+		data: latestFormDataForInstanceState,
+		isLoading: isLatestFormDataForInstanceStateLoading,
+		isError: isLatestFormDataForInstanceStateError,
 	} = useQuery({
-		...latestCurrentFormDataQueryOptions(
+		...latestFormDataForInstanceStateQueryOptions(
 			Number(instanceId || "0"),
-			currentForm?.formDefId ?? -1,
+			currentState,
 		),
-		enabled: !!currentForm?.formDefId,
+		enabled: !!workflowInstance,
 	});
 
 	// Early returns after all hooks are called
@@ -130,9 +143,12 @@ function RouteComponent() {
 	if (!currentForm || !currentForm.formDefId || !currentForm.schema)
 		return <div>No form found</div>;
 
-	if (isLatestCurrentFormDataLoading) return <div>Loading...</div>;
-	if (isLatestCurrentFormDataError)
-		return <div>Error loading latest current form data</div>;
+	// if (isLatestCurrentFormDataLoading) return <div>Loading...</div>;
+	// if (isLatestCurrentFormDataError)
+	// 	return <div>Error loading latest current form data</div>;
+
+	if (isLatestFormDataForInstanceStateLoading) return <div>Loading...</div>;
+	if (isLatestFormDataForInstanceStateError) return <div>Error loading latest form data</div>;
 
 	return (
 		<div className="container mx-auto p-4">
@@ -150,7 +166,7 @@ function RouteComponent() {
 			<DynamicForm
 				key={currentForm.formDefId}
 				schema={currentForm.schema}
-				initialData={latestCurrentFormData?.[0]?.data}
+				initialData={latestFormDataForInstanceState?.[0]?.data}
 				workflowInstance={workflowInstance}
 				formDefId={currentForm.formDefId}
 				machineConfig={workflowDefinition.machineConfig}

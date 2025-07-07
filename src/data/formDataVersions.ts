@@ -3,7 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq } from "drizzle-orm";
 import type { Operation } from "fast-json-patch";
 import z from "zod";
-import { formDataVersions } from "@/db/schema";
+import { formDataVersions, formDefinitions } from "@/db/schema";
 import { createZodSchema } from "@/lib/form";
 import { createJSONPatch } from "@/lib/jsonPatch";
 import { getFormSchema } from "./formDefinitions";
@@ -147,4 +147,58 @@ export const createDataVersionServerFn = createServerFn({
 	)
 	.handler(async ({ data: { workflowInstanceId, formDefId, data } }) => {
 		return createDataVersion(workflowInstanceId, formDefId, data);
+	});
+
+// Fetch the latest form data version for a workflowInstanceId and state, regardless of formDefId
+export async function getLatestFormDataForInstanceState(
+	workflowInstanceId: number,
+	state: string,
+) {
+	const { dbClient: db } = await import("../db");
+	// Join formDataVersions with formDefinitions to filter by state
+	const result = await db
+		.select({
+			id: formDataVersions.id,
+			formDefId: formDataVersions.formDefId,
+			version: formDataVersions.version,
+			data: formDataVersions.data,
+			createdAt: formDataVersions.createdAt,
+		})
+		.from(formDataVersions)
+		.innerJoin(
+			formDefinitions,
+			and(
+				eq(formDataVersions.formDefId, formDefinitions.id),
+				eq(formDefinitions.state, state),
+			),
+		)
+		.where(eq(formDataVersions.workflowInstanceId, workflowInstanceId))
+		.orderBy(desc(formDataVersions.version))
+		.limit(1);
+	return result;
+}
+
+export const fetchLatestFormDataForInstanceState = createServerFn({
+	method: "GET",
+})
+	.validator(
+		z.object({
+			workflowInstanceId: z.number(),
+			state: z.string(),
+		}),
+	)
+	.handler(async ({ data: { workflowInstanceId, state } }) => {
+		return getLatestFormDataForInstanceState(workflowInstanceId, state);
+	});
+
+export const latestFormDataForInstanceStateQueryOptions = (
+	workflowInstanceId: number,
+	state: string,
+) =>
+	queryOptions({
+		queryKey: ["latestFormDataForInstanceState", workflowInstanceId, state],
+		queryFn: () =>
+			fetchLatestFormDataForInstanceState({
+				data: { workflowInstanceId, state },
+			}),
 	});
