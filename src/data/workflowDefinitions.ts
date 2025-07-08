@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { desc, eq } from "drizzle-orm";
-import z from "zod";
+import * as z from "zod/v4";
 import { workflowDefinitions } from "@/db/schema";
 
 export async function getWorkflowDefinitions() {

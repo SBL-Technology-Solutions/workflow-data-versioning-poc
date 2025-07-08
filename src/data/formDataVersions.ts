@@ -2,7 +2,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq } from "drizzle-orm";
 import type { Operation } from "fast-json-patch";
-import z from "zod";
+import * as z from "zod/v4";
 import { formDataVersions } from "@/db/schema";
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
 import { createJSONPatch } from "@/lib/jsonPatch";
@@ -98,9 +98,7 @@ export async function saveFormData(
 	);
 
 	if (!validatedPartialData.success) {
-		throw new Error(
-			`Invalid data provided: ${formatZodErrors(validatedPartialData)}`,
-		);
+		throw new Error(formatZodErrors(validatedPartialData));
 	}
 
 	const previousData = await dbClient
@@ -135,7 +133,7 @@ export async function saveFormData(
 	return result;
 }
 
-export const createDataVersionServerFn = createServerFn({
+export const saveFormDataServerFn = createServerFn({
 	method: "POST",
 })
 	.validator(

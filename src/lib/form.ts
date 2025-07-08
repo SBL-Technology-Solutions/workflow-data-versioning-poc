@@ -1,5 +1,5 @@
 import type { FormValidateOrFn } from "@tanstack/react-form";
-import { z } from "zod";
+import * as z from "zod/v4";
 
 // Basic field types we support
 export const FormFieldType = z.enum(["text", "textarea"]);
@@ -80,15 +80,17 @@ type ZodShape<T extends FormSchema> = {
 
 export function createZodValidationSchema<T extends FormSchema>(
 	form: T,
+	isPartial = false,
 ): FormValidateOrFn<FormValues<T>> {
-	const zodSchema = createZodSchema(form);
+	const zodSchema = createZodSchema(form, isPartial);
 	return zodSchema as unknown as FormValidateOrFn<FormValues<T>>;
 }
 
 // Export the actual Zod schema for external validation
 export function createZodSchema<T extends FormSchema>(
 	form: T,
-): z.ZodObject<ZodShape<T>> {
+	isPartial = false,
+) {
 	// 1) Turn each field into a [name, schema] tuple
 	const entries = form.fields.map((field) => {
 		let schema: z.ZodTypeAny;
@@ -98,22 +100,23 @@ export function createZodSchema<T extends FormSchema>(
 			case "text":
 			case "textarea": {
 				let s: z.ZodString = z.string();
-				if (field.required)
-					s = s.nonempty({ message: `${field.label} is required` });
+				// Only apply required validation if not partial
+				if (field.required && !isPartial)
+					s = s.min(1, { error: `${field.label} is required` });
 				if (field.minLength != null)
 					s = s.min(field.minLength, {
-						message: `${field.label} must be at least ${field.minLength} characters long`,
+						error: `${field.label} must be at least ${field.minLength} characters long`,
 					});
 				if (field.maxLength != null)
 					s = s.max(field.maxLength, {
-						message: `${field.label} must be at most ${field.maxLength} characters long`,
+						error: `${field.label} must be at most ${field.maxLength} characters long`,
 					});
 				if (field.type === "text" && field.pattern) {
 					s = s.regex(new RegExp(field.pattern), {
-						message: `${field.label} has invalid format`,
+						error: `${field.label} has invalid format`,
 					});
 				}
-				schema = field.required ? s : s.optional();
+				schema = field.required && !isPartial ? s : s.optional();
 				break;
 			}
 			// case "number": {
@@ -141,7 +144,7 @@ export function createZodSchema<T extends FormSchema>(
 	});
 
 	// 2) Build your shape object in one shot
-	const shape = Object.fromEntries(entries) as ZodShape<T>;
+	const shape = Object.fromEntries(entries);
 
 	// 3) Return the ZodObject
 	return z.object(shape);
@@ -185,18 +188,19 @@ export function makeInitialValues<T extends FormSchema>(
  * const result = schema.safeParse(data);
  * if (!result.success) {
  *   const errorMessage = formatZodErrors(result);
- *   console.log(errorMessage); // "name: Required, age: Expected number, received string"
+ *   console.log(errorMessage);
+ *   // "✖ Unrecognized key: "extraKey"
+ *   // "✖ Invalid input: expected string, received number
+ *   // → at username
+ *   // "✖ Invalid input: expected number, received string
+ *   // → at favoriteNumbers[1]"
  * }
  * ```
  */
 export const formatZodErrors = (
 	failedSafeParseData: z.ZodSafeParseError<object>,
 ) => {
-	const messages = failedSafeParseData.error.issues.map((error) => {
-		const path = error.path.join(".") || "<root>";
-		return `${path}: ${error.message}`;
-	});
-	return messages.join(", ");
+	return z.prettifyError(failedSafeParseData.error);
 };
 /**
  * Converts a FormSchema to a Zod schema and validates data against it
@@ -232,7 +236,6 @@ export const ConvertToZodSchemaAndValidate = (
 	data: Record<string, string>,
 	isPartial = false,
 ) => {
-	const zodSchema = createZodSchema(formSchema);
-	const resolvedZodSchema = isPartial ? zodSchema.partial() : zodSchema;
-	return resolvedZodSchema.safeParse(data);
+	const zodSchema = createZodSchema(formSchema, isPartial);
+	return zodSchema.safeParse(data);
 };

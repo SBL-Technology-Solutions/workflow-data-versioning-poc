@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { toast } from "sonner";
-import { createDataVersionServerFn } from "@/data/formDataVersions";
+import { saveFormDataServerFn } from "@/data/formDataVersions";
 import {
 	sendWorkflowEventServerFn,
 	type WorkflowInstance,
@@ -77,7 +77,7 @@ export const DynamicForm = ({
 
 	const saveFormData = useMutation({
 		mutationFn: (data: Record<string, string>) =>
-			createDataVersionServerFn({
+			saveFormDataServerFn({
 				data: {
 					workflowInstanceId: workflowInstance.id,
 					formDefId,
@@ -85,10 +85,13 @@ export const DynamicForm = ({
 				},
 			}),
 		onSuccess: () => {
-			toast.success("Form definition saved successfully");
+			toast.success("Form saved successfully");
 		},
-		onError: () => {
-			toast.error("Failed to save form definition");
+		//TODO: improve rendering of zod errors in toast as its losing the formatting by the time it gets here
+		onError: (error) => {
+			toast.error("Failed to save the form", {
+				description: error.message,
+			});
 		},
 	});
 
