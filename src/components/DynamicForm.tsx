@@ -193,6 +193,7 @@ export const DynamicForm = ({
 								type="button"
 								disabled={saveFormData.isPending}
 								variant="outline"
+								//TODO: This is currently ignoring client side zod validation as its not running through handleSubmit, we should maybe add a handler and have this run the zod validation first and then if it passes, run the mutation or add to handleSubmit
 								onClick={() => saveFormData.mutate(form.state.values)}
 							>
 								{saveFormData.isPending ? "Saving..." : "Save"}
