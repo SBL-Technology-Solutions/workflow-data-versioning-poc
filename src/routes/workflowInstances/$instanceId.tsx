@@ -11,7 +11,6 @@ import { latestCurrentFormDataQueryOptions } from "@/data/formDataVersions";
 import { getCurrentFormForInstanceQueryOptions } from "@/data/formDefinitions";
 import { getWorkflowDefinitionQueryOptions } from "@/data/workflowDefinitions";
 import { fetchWorkflowInstanceQueryOptions } from "@/data/workflowInstances";
-import { useEffect } from "react";
 
 const workflowInstanceSearchSchema = z.object({
 	state: z.string().catch(""),
@@ -63,19 +62,6 @@ function RouteComponent() {
 	);
 
 	const currentState = state || workflowInstance?.currentState || "";
-
-	useEffect(() => {
-		// Only update the URL if the state param is missing or empty,
-		// and we have a valid currentState
-		if (!state && currentState) {
-			navigate({
-				to: "/workflowInstances/$instanceId",
-				params: { instanceId: instanceId || "" },
-				search: { state: currentState },
-				replace: true, // Use replace to avoid adding a new history entry
-			});
-		}
-	}, [state, currentState, instanceId, navigate]);
 
 	const handleStateChange = (newState: string) => {
 		navigate({
