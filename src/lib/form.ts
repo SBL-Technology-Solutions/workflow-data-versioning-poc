@@ -78,6 +78,13 @@ type ZodShape<T extends FormSchema> = {
 	[F in T["fields"][number] as F["name"]]: FieldToZod<F>;
 };
 
+/**
+ * Generates a Zod validation schema for the given form definition, optionally making all fields optional for partial validation.
+ *
+ * @param form - The form schema definition
+ * @param isPartial - If true, all fields are treated as optional for partial validation (default: false)
+ * @returns A validation function compatible with @tanstack/react-form, based on the generated Zod schema
+ */
 export function createZodValidationSchema<T extends FormSchema>(
 	form: T,
 	isPartial = false,
@@ -86,7 +93,15 @@ export function createZodValidationSchema<T extends FormSchema>(
 	return zodSchema as unknown as FormValidateOrFn<FormValues<T>>;
 }
 
-// Export the actual Zod schema for external validation
+/**
+ * Generates a Zod object schema for the provided form definition.
+ *
+ * For each field in the form, creates a corresponding Zod schema with appropriate validations based on field type and configuration. Supports partial schemas where all fields are optional.
+ *
+ * @param form - The form schema definition
+ * @param isPartial - If true, all fields are made optional and required/minLength validations are skipped
+ * @returns A Zod object schema representing the form's validation rules
+ */
 export function createZodSchema<T extends FormSchema>(
 	form: T,
 	isPartial = false,
@@ -150,6 +165,14 @@ export function createZodSchema<T extends FormSchema>(
 	return z.object(shape);
 }
 
+/**
+ * Returns the default empty value for a given form field type.
+ *
+ * For "text" and "textarea" fields, returns an empty string. For unsupported field types, returns an empty string as a fallback.
+ *
+ * @param f - The form field schema to determine the empty value for
+ * @returns The empty value corresponding to the field type
+ */
 function emptyValueForField(f: FormFieldSchema): string {
 	switch (f.type) {
 		case "text":
@@ -166,7 +189,13 @@ function emptyValueForField(f: FormFieldSchema): string {
 	}
 }
 
-// Given a FormSchema, build the initialValues
+/**
+ * Generates an object mapping each field name in the form schema to its initial empty value.
+ *
+ * For text and textarea fields, the initial value is an empty string. Other field types default to an empty string as well.
+ *
+ * @returns An object with field names as keys and their corresponding initial values.
+ */
 export function makeInitialValues<T extends FormSchema>(
 	form: T,
 ): Record<T["fields"][number]["name"], string> {

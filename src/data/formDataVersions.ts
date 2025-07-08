@@ -8,6 +8,11 @@ import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
 import { createJSONPatch } from "@/lib/jsonPatch";
 import { getFormSchema } from "./formDefinitions";
 
+/**
+ * Retrieves the latest five form data version records from the database, ordered by creation date descending.
+ *
+ * @returns A promise resolving to an array of the most recent form data version entries.
+ */
 export async function getFormDataVersions() {
 	const { dbClient: db } = await import("../db");
 	return await db.query.formDataVersions.findMany({
@@ -28,6 +33,13 @@ export const formDataVersionsQueryOptions = () => ({
 	queryFn: () => fetchFormDataVersions(),
 });
 
+/**
+ * Retrieves the most recent form data version for the specified workflow instance and form definition.
+ *
+ * @param workflowInstanceId - The ID of the workflow instance to filter by
+ * @param formDefId - The ID of the form definition to filter by
+ * @returns An array containing the latest form data version record, or an empty array if none exist
+ */
 export async function getLatestCurrentFormData(
 	workflowInstanceId: number,
 	formDefId: number,
@@ -81,6 +93,17 @@ export const latestCurrentFormDataQueryOptions = (
 			}),
 	});
 
+/**
+ * Saves a new version of form data for a given workflow instance and form definition.
+ *
+ * Validates the input data against the form schema, computes a JSON patch from the previous version if it exists, and inserts the new version into the database. Returns the ID of the inserted record.
+ *
+ * @param workflowInstanceId - The ID of the workflow instance associated with the form data.
+ * @param formDefId - The ID of the form definition for which data is being saved.
+ * @param data - The form data to be saved, as a mapping of field names to string values.
+ * @returns An array containing an object with the ID of the newly inserted form data version.
+ * @throws If the input data fails schema validation.
+ */
 export async function saveFormData(
 	workflowInstanceId: number,
 	formDefId: number,
