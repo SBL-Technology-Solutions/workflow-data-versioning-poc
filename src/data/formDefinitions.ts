@@ -250,9 +250,15 @@ export async function createFormVersion(
 	try {
 		await migrateCompatibleFormDataVersions(db, workflowDefId, state, schema, newFormDef.id);
 	} catch (error) {
-		console.error('Failed to migrate form data versions:', error);
-		// Consider whether to rollback the form definition creation or just log the error
-		throw new Error(`Form version created but data migration failed: ${error.message}`);
+} catch (error) {
+	console.error('Failed to migrate form data versions:', error);
+	// Consider whether to rollback the form definition creation or just log the error
+	throw new Error(
+		`Form version created but data migration failed: ${
+			error instanceof Error ? error.message : String(error)
+		}`
+	);
+}
 	}
 	
 	return [{ id: newFormDef.id }];
