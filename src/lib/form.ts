@@ -103,7 +103,7 @@ export function createZodSchema<T extends FormSchema>(
 				// Only apply required validation if not partial
 				if (field.required && !isPartial)
 					s = s.min(1, { error: `${field.label} is required` });
-				if (field.minLength != null)
+				if (field.minLength != null && !isPartial)
 					s = s.min(field.minLength, {
 						error: `${field.label} must be at least ${field.minLength} characters long`,
 					});
