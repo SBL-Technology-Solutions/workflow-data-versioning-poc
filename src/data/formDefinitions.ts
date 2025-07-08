@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq } from "drizzle-orm";
-import z from "zod";
+import * as z from "zod/v4";
 import {
 	formDataVersions,
 	formDefinitions,

@@ -12,9 +12,11 @@ Dynamic Forms and Schema Versioning
   - [x] Buttons: Save/Next/Previous (depending on what's available)
   - [x] Create a new form_data_version (if doesn't exist) and update the current_state / status in DB
   - [x] Ability to create a new workflow instance
-  - [ ] FIX: Xstate handling of workflow to hydrate the state from the DB, send the event and persist the updated state
+  - [x] Xstate handling of workflow to hydrate the state from the DB, send the event and persist the updated state
+  - [ ] Need to add zod validation to workflow submissions
+  - [ ] Need to throw an error if an event was sent that does not transition the workflow
   - [ ] Define initial workflow states and transitions
-  - [ ] Implement state persistence in database
+  - [x] Implement state persistence in database
   - [ ] Add ability to version workflow definitions
   - [ ] Create workflow instance management
 
@@ -30,8 +32,8 @@ Dynamic Forms and Schema Versioning
   - [ ] Implement form data versioning and diffs
   - [x] Add form validation and error handling
   - [ ] Create form builder/editor UI for admins
-    - [ ] Submitting form is not yet working
-    - [ ] changing states for workflow is not working as expected and the form is not re-rendering when route changes
+    - [x] Submitting form is not yet working
+    - [x] changing states for workflow is not working as expected and the form is not re-rendering when route changes
 
 - [ ] Implement approval workflow
 

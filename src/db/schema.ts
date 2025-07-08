@@ -8,7 +8,7 @@ import {
 	timestamp,
 	varchar,
 } from "drizzle-orm/pg-core";
-import type { z } from "zod";
+import type * as z from "zod/v4";
 import type { FormSchema } from "@/lib/form";
 
 type FormSchemaType = z.infer<typeof FormSchema>;

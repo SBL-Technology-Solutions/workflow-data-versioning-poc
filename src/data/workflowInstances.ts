@@ -2,9 +2,11 @@ import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { desc, eq } from "drizzle-orm";
 import { createActor, createMachine, StateMachine } from "xstate";
-import { z } from "zod";
+import * as z from "zod/v4";
+import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
 import { workflowDefinitions, workflowInstances } from "../db/schema";
-import { createDataVersion } from "./formDataVersions";
+import { saveFormData } from "./formDataVersions";
+import { getFormSchema } from "./formDefinitions";
 export async function getWorkflowInstance(id: number) {
 	const { dbClient: db } = await import("../db");
 	const result = await db
@@ -157,13 +159,21 @@ export const sendWorkflowEvent = async (
 	event: string,
 	formData: Record<string, string>,
 ) => {
-	const { dbClient: db } = await import("../db");
+	const { dbClient } = await import("../db");
+
+	// Save the form data to the db first so we persist data even if not all of the required data is provided
+	await saveFormData(instanceId, formDefId, formData);
 
 	// get the workflow instance
 	const workflowInstance = await getWorkflowInstance(instanceId);
+	const formSchema = await getFormSchema(formDefId);
 
-	// Save the form data to the db
-	await createDataVersion(workflowInstance.id, formDefId, formData);
+	// validate the form data against the form schema and throw an error if any of the required fields are not provided
+	const validatedData = ConvertToZodSchemaAndValidate(formSchema, formData);
+
+	if (!validatedData.success) {
+		throw new Error(`Invalid data provided: ${formatZodErrors(validatedData)}`);
+	}
 
 	// create the xstate actor based on the machine config and the current state
 	const workflowMachine = createMachine(
@@ -185,14 +195,20 @@ export const sendWorkflowEvent = async (
 	restoredActor.send({ type: event });
 
 	// get the current state
-	const currentState = restoredActor.getPersistedSnapshot();
-	console.log("currentState", (currentState as any).value);
+	const persistedSnapshot = restoredActor.getPersistedSnapshot();
+	const updatedState = (persistedSnapshot as any).value;
+
+	if (workflowInstance.currentState === updatedState) {
+		throw new Error("The workflow did not progress forward");
+	}
+
+	console.log("currentState", updatedState);
 
 	// persit the updated state to the db
-	const result = await db
+	const result = await dbClient
 		.update(workflowInstances)
 		.set({
-			currentState: (currentState as any).value,
+			currentState: updatedState,
 			updatedAt: new Date(),
 		})
 		.where(eq(workflowInstances.id, instanceId))
