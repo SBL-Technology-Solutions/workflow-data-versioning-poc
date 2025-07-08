@@ -1,8 +1,8 @@
-import { useTheme } from "next-themes";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-	const { theme = "system" } = useTheme();
+	// TODO: Add Tanstack Start theme provider as Sonner uses next-themes which only works correctly with nextjs, example here - https://gist.github.com/WellDone2094/16107a2a9476b28a5b394bee3fa1b8a3
+	const theme = "light";
 
 	return (
 		<Sonner

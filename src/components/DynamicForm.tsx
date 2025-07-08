@@ -1,8 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { toast } from "sonner";
-import { __unsafe_getAllOwnEventDescriptors, createMachine } from "xstate";
-import { createDataVersionServerFn } from "@/data/formDataVersions";
+import { saveFormDataServerFn } from "@/data/formDataVersions";
 import {
 	sendWorkflowEventServerFn,
 	type WorkflowInstance,
@@ -11,7 +11,8 @@ import {
 	createZodValidationSchema,
 	type FormSchema,
 	makeInitialValues,
-} from "@/types/form";
+} from "@/lib/form";
+import { getNextEvents } from "@/lib/workflow";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useAppForm } from "./ui/tanstack-form";
@@ -23,9 +24,13 @@ interface DynamicFormProps {
 	initialData?: Record<string, string>;
 	workflowInstance: WorkflowInstance;
 	formDefId: number;
-	//improve this typing
+	//TODO: improve this typing
 	machineConfig: Record<string, unknown>;
 }
+
+const defaultSubmitMeta: { event: string | null } = {
+	event: null,
+};
 
 export const DynamicForm = ({
 	schema,
@@ -37,13 +42,19 @@ export const DynamicForm = ({
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 	const sendWorkflowEvent = useMutation({
-		mutationFn: (event: string) =>
+		mutationFn: ({
+			event,
+			formData,
+		}: {
+			event: string;
+			formData: Record<string, string>;
+		}) =>
 			sendWorkflowEventServerFn({
 				data: {
 					instanceId: workflowInstance.id,
 					event,
 					formDefId,
-					formData: form.state.values,
+					formData,
 				},
 			}),
 		onSuccess: (result) => {
@@ -66,7 +77,7 @@ export const DynamicForm = ({
 
 	const saveFormData = useMutation({
 		mutationFn: (data: Record<string, string>) =>
-			createDataVersionServerFn({
+			saveFormDataServerFn({
 				data: {
 					workflowInstanceId: workflowInstance.id,
 					formDefId,
@@ -74,45 +85,52 @@ export const DynamicForm = ({
 				},
 			}),
 		onSuccess: () => {
-			toast.success("Form definition saved successfully");
+			toast.success("Form saved successfully");
 		},
-		onError: () => {
-			toast.error("Failed to save form definition");
+		//TODO: improve rendering of zod errors in toast as its losing the formatting by the time it gets here
+		onError: (error) => {
+			toast.error("Failed to save the form", {
+				description: error.message,
+			});
 		},
 	});
-	// const pathname = usePathname();
 
-	const validationSchema = createZodValidationSchema(schema);
+	const validationSchema = useMemo(
+		() => createZodValidationSchema(schema),
+		[schema],
+	);
 
-	const effectiveInitialData = initialData ?? makeInitialValues(schema);
+	const effectiveInitialData = useMemo(
+		() => initialData ?? makeInitialValues(schema),
+		[initialData, schema],
+	);
+
+	const nextEvents = useMemo(
+		() => getNextEvents(machineConfig, workflowInstance),
+		[machineConfig, workflowInstance],
+	);
 
 	const form = useAppForm({
 		defaultValues: effectiveInitialData,
-		// TODO: LIkely want to swap saveFormData and maybe not leverage onSubmit in case their are multiple events
-		onSubmit: async ({ value }) => {
-			saveFormData.mutate(value);
+		onSubmitMeta: defaultSubmitMeta,
+		onSubmit: async ({ value, meta }) => {
+			if (meta.event) {
+				sendWorkflowEvent.mutate({ event: meta.event, formData: value });
+			} else {
+				saveFormData.mutate(value);
+			}
 		},
 		validators: {
 			onChange: validationSchema,
-			onBlur: validationSchema,
+			onMount: validationSchema,
 		},
 	});
-
-	const workflowMachine = createMachine(machineConfig);
-
-	const resolvedState = workflowMachine.resolveState({
-		value: workflowInstance.currentState,
-	});
-	console.log("resolvedState: ", resolvedState);
-
-	const nextEvents = __unsafe_getAllOwnEventDescriptors(resolvedState);
-	console.log("nextEvents: ", nextEvents);
-	console.log("form state: ", form.state);
 
 	const renderField = (fieldMeta: FormSchema["fields"][number]) => (
 		<form.AppField
 			key={fieldMeta.name}
 			name={fieldMeta.name}
+			// biome-ignore lint/correctness/noChildrenProp: this is how tanstack form works
 			children={(field) => (
 				<div className="space-y-2">
 					<field.FormItem>
@@ -140,6 +158,7 @@ export const DynamicForm = ({
 								id={field.name}
 								value={field.state.value}
 								onChange={(e) => field.handleChange(e.target.value)}
+								onBlur={field.handleBlur}
 								type={fieldMeta.type}
 								placeholder={fieldMeta.description}
 							/>
@@ -157,7 +176,7 @@ export const DynamicForm = ({
 				className="flex flex-col gap-6"
 				onSubmit={(e) => {
 					e.preventDefault();
-					form.handleSubmit();
+					e.stopPropagation();
 				}}
 			>
 				{schema.title ? (
@@ -167,26 +186,39 @@ export const DynamicForm = ({
 					<p className="text-muted-foreground">{schema.description}</p>
 				) : null}
 				{schema.fields.map((field) => renderField(field))}
-				<div className="flex space-x-2">
-					<Button type="submit">Save</Button>
-					<div className="flex space-x-2">
-						{nextEvents.length === 0
-							? null
-							: nextEvents.map((evt) => (
-									<Button
-										type="button"
-										key={evt}
-										onClick={() => sendWorkflowEvent.mutate(evt)}
-										disabled={
-											//TODO: Form state isValid is not working as the form state is always valid
-											sendWorkflowEvent.isPending || !form.state.isValid
-										}
-									>
-										{evt}
-									</Button>
-								))}
-					</div>
-				</div>
+				<form.Subscribe selector={(state) => state.canSubmit}>
+					{(canSubmit) => (
+						<div className="flex space-x-2">
+							<Button
+								type="button"
+								disabled={saveFormData.isPending}
+								variant="outline"
+								//TODO: This is currently ignoring client side zod validation as its not running through handleSubmit, we should maybe add a handler and have this run the zod validation first and then if it passes, run the mutation or add to handleSubmit
+								onClick={() => saveFormData.mutate(form.state.values)}
+							>
+								{saveFormData.isPending ? "Saving..." : "Save"}
+							</Button>
+							<div className="flex space-x-2">
+								{nextEvents.length === 0
+									? null
+									: nextEvents.map((event) => (
+											<Button
+												type="submit"
+												key={event}
+												onClick={() =>
+													form.handleSubmit({
+														event,
+													})
+												}
+												disabled={sendWorkflowEvent.isPending || !canSubmit}
+											>
+												{sendWorkflowEvent.isPending ? "Submitting..." : event}
+											</Button>
+										))}
+							</div>
+						</div>
+					)}
+				</form.Subscribe>
 			</form>
 		</form.AppForm>
 	);

@@ -1,15 +1,15 @@
+import { createServerFn } from "@tanstack/react-start";
+import { and, desc, eq } from "drizzle-orm";
+import * as z from "zod/v4";
 import {
 	formDataVersions,
 	formDefinitions,
 	workflowInstances,
 } from "@/db/schema";
-import { type FormSchema, FormSchema as zodFormSchema } from "@/types/form";
-import { createServerFn } from "@tanstack/react-start";
-import { and, desc, eq } from "drizzle-orm";
-import z from "zod";
+import { type FormSchema, FormSchema as zodFormSchema } from "@/lib/form";
 
 export async function getFormDefinitions() {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 	return await db.query.formDefinitions.findMany({
 		orderBy: desc(formDefinitions.createdAt),
 		limit: 5,
@@ -33,7 +33,7 @@ export async function getCurrentFormForInstance(
 	workflowInstanceId: number,
 	state: string,
 ) {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 
 	// First get the workflow instance to get its workflowDefId
 	const instance = await db
@@ -84,7 +84,7 @@ export async function getCurrentFormForDefinition(
 	workflowDefId: number,
 	state: string,
 ) {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 
 	const result = await db
 		.select({
@@ -159,7 +159,7 @@ export async function createFormVersion(
 	state: string,
 	schema: FormSchema,
 ) {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 
 	const currentVersion = await db
 		.select()
@@ -201,3 +201,19 @@ export const createFormVersionServerFn = createServerFn({
 	.handler(async ({ data: { workflowDefId, state, schema } }) =>
 		createFormVersion(workflowDefId, state, schema),
 	);
+
+// get form schema from formDefId
+export async function getFormSchema(formDefId: number) {
+	const { dbClient } = await import("../db");
+	const formDefinition = await dbClient
+		.select()
+		.from(formDefinitions)
+		.where(eq(formDefinitions.id, formDefId))
+		.limit(1);
+
+	if (!formDefinition.length) {
+		throw new Error(`Form definition with id ${formDefId} not found`);
+	}
+
+	return formDefinition[0].schema;
+}

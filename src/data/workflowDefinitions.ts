@@ -1,11 +1,11 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { desc, eq } from "drizzle-orm";
-import z from "zod";
+import * as z from "zod/v4";
 import { workflowDefinitions } from "@/db/schema";
 
 export async function getWorkflowDefinitions() {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 	return await db.query.workflowDefinitions.findMany({
 		orderBy: desc(workflowDefinitions.createdAt),
 		limit: 5,
@@ -25,7 +25,7 @@ export const workflowDefinitionsQueryOptions = () => ({
 });
 
 export async function getWorkflowDefinition(id: number) {
-	const { db } = await import("../db");
+	const { dbClient: db } = await import("../db");
 	const workflows = await db
 		.select()
 		.from(workflowDefinitions)
