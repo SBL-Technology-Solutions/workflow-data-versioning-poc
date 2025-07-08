@@ -155,7 +155,14 @@ export const getCurrentFormForDefinitionQueryOptions = (
 });
 
 // Helper: Migrate compatible form data versions to new form definition
-async function migrateCompatibleFormDataVersions(db: Awaited<typeof import("../db")>["dbClient"], workflowDefId: number, state: string, schema: FormSchema, newFormDefId: number) {	const matchingInstances = await db
+async function migrateCompatibleFormDataVersions(
+	db: Awaited<typeof import("../db")>["dbClient"],
+	workflowDefId: number,
+	state: string,
+	schema: FormSchema,
+	newFormDefId: number
+) {
+	const matchingInstances = await db
 		.select({
 			id: workflowInstances.id,
 			currentState: workflowInstances.currentState,
