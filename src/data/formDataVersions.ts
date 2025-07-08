@@ -4,7 +4,7 @@ import { and, desc, eq } from "drizzle-orm";
 import type { Operation } from "fast-json-patch";
 import z from "zod";
 import { formDataVersions } from "@/db/schema";
-import { createZodSchema } from "@/lib/form";
+import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
 import { createJSONPatch } from "@/lib/jsonPatch";
 import { getFormSchema } from "./formDefinitions";
 
@@ -81,7 +81,7 @@ export const latestCurrentFormDataQueryOptions = (
 			}),
 	});
 
-export async function createDataVersion(
+export async function saveFormData(
 	workflowInstanceId: number,
 	formDefId: number,
 	data: Record<string, string>,
@@ -91,16 +91,16 @@ export async function createDataVersion(
 	const { dbClient } = await import("../db");
 	// get form schema from formDefId and convert to zod schema
 	const formSchema = await getFormSchema(formDefId);
-	const zodSchema = createZodSchema(formSchema);
-	const partialZodSchema = zodSchema.partial();
-	const parsedData = partialZodSchema.safeParse(data);
+	const validatedPartialData = ConvertToZodSchemaAndValidate(
+		formSchema,
+		data,
+		true,
+	);
 
-	if (!parsedData.success) {
-		const messages = parsedData.error.issues.map((error) => {
-			const path = error.path.join(".") || "<root>";
-			return `${path}: ${error.message}`;
-		});
-		throw new Error(`Invalid data provided: ${messages.join(", ")}`);
+	if (!validatedPartialData.success) {
+		throw new Error(
+			`Invalid data provided: ${formatZodErrors(validatedPartialData)}`,
+		);
 	}
 
 	const previousData = await dbClient
@@ -146,5 +146,5 @@ export const createDataVersionServerFn = createServerFn({
 		}),
 	)
 	.handler(async ({ data: { workflowInstanceId, formDefId, data } }) => {
-		return createDataVersion(workflowInstanceId, formDefId, data);
+		return saveFormData(workflowInstanceId, formDefId, data);
 	});

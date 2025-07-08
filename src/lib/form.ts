@@ -175,3 +175,64 @@ export function makeInitialValues<T extends FormSchema>(
 
 	return initialValues;
 }
+
+/**
+ * Formats Zod validation errors into a human-readable string
+ * @param failedSafeParseData - The result of a failed Zod safeParse operation
+ * @returns A comma-separated string of formatted error messages
+ * @example
+ * ```typescript
+ * const result = schema.safeParse(data);
+ * if (!result.success) {
+ *   const errorMessage = formatZodErrors(result);
+ *   console.log(errorMessage); // "name: Required, age: Expected number, received string"
+ * }
+ * ```
+ */
+export const formatZodErrors = (
+	failedSafeParseData: z.ZodSafeParseError<object>,
+) => {
+	const messages = failedSafeParseData.error.issues.map((error) => {
+		const path = error.path.join(".") || "<root>";
+		return `${path}: ${error.message}`;
+	});
+	return messages.join(", ");
+};
+/**
+ * Converts a FormSchema to a Zod schema and validates data against it
+ * @param formSchema - The form schema definition containing field types and validation rules
+ * @param data - The data object to validate against the schema
+ * @param isPartial - Whether to make the schema partial (all fields optional). Defaults to false
+ * @returns A Zod safeParse result containing success status and either validated data or validation errors
+ * @example
+ * ```typescript
+ * const formSchema: FormSchema = {
+ *   fields: [
+ *     { name: "name", type: "text", required: true },
+ *     { name: "email", type: "text", required: true }
+ *   ]
+ * };
+ *
+ * const data = { name: "John", email: "john@example.com" };
+ * const result = ConvertToZodSchemaAndValidate(formSchema, data);
+ *
+ * if (result.success) {
+ *   console.log("Valid data:", result.data);
+ * } else {
+ *   console.log("Validation errors:", formatZodErrors(result));
+ * }
+ *
+ * // For partial validation (e.g., form updates)
+ * const partialData = { name: "John" };
+ * const partialResult = ConvertToZodSchemaAndValidate(formSchema, partialData, true);
+ * ```
+ */
+export const ConvertToZodSchemaAndValidate = (
+	formSchema: FormSchema,
+	data: Record<string, string>,
+	isPartial = false,
+) => {
+	const zodSchema = createZodSchema(formSchema);
+	const resolvedZodSchema = isPartial ? zodSchema.partial() : zodSchema;
+	return resolvedZodSchema.safeParse(data);
+};

@@ -4,7 +4,7 @@ import { desc, eq } from "drizzle-orm";
 import { createActor, createMachine, StateMachine } from "xstate";
 import { z } from "zod";
 import { workflowDefinitions, workflowInstances } from "../db/schema";
-import { createDataVersion } from "./formDataVersions";
+import { saveFormData } from "./formDataVersions";
 export async function getWorkflowInstance(id: number) {
 	const { dbClient: db } = await import("../db");
 	const result = await db
@@ -163,7 +163,7 @@ export const sendWorkflowEvent = async (
 	const workflowInstance = await getWorkflowInstance(instanceId);
 
 	// Save the form data to the db
-	await createDataVersion(workflowInstance.id, formDefId, formData);
+	await saveFormData(workflowInstance.id, formDefId, formData);
 
 	// create the xstate actor based on the machine config and the current state
 	const workflowMachine = createMachine(
