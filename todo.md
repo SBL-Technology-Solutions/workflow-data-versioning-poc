@@ -13,8 +13,8 @@ Dynamic Forms and Schema Versioning
   - [x] Create a new form_data_version (if doesn't exist) and update the current_state / status in DB
   - [x] Ability to create a new workflow instance
   - [x] Xstate handling of workflow to hydrate the state from the DB, send the event and persist the updated state
-  - [ ] Need to add zod validation to workflow submissions
-  - [ ] Need to throw an error if an event was sent that does not transition the workflow
+  - [x] Need to add zod validation to workflow submissions
+  - [x] Need to throw an error if an event was sent that does not transition the workflow
   - [ ] Define initial workflow states and transitions
   - [x] Implement state persistence in database
   - [ ] Add ability to version workflow definitions

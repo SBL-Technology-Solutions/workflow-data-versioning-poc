@@ -1,23 +1,23 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Suspense } from "react";
+import { toast } from "sonner";
 import { FormDataVersions } from "@/components/dashboard/FormDataVersions";
 import { FormDefinitions } from "@/components/dashboard/FormDefinitions";
 import { WorkflowDefinitions } from "@/components/dashboard/WorkflowDefinitions";
 import { WorkflowInstances } from "@/components/dashboard/WorkflowInstances";
+import { Button } from "@/components/ui/button";
+import { API } from "@/data/API";
 import { formDataVersionsQueryOptions } from "@/data/formDataVersions";
 import { formDefinitionsQueryOptions } from "@/data/formDefinitions";
 import { workflowDefinitionsQueryOptions } from "@/data/workflowDefinitions";
-import { createWorkflowInstanceServerFn, workflowInstancesQueryOptions } from "@/data/workflowInstances";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Suspense } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
 	component: Home,
 	loader: async ({ context }) => {
 		return {
 			workflowInstances: context.queryClient.prefetchQuery(
-				workflowInstancesQueryOptions(),
+				API.workflowInstance.queries.getWorkflowInstancesQueryOptions(),
 			),
 			workflowDefinitions: context.queryClient.prefetchQuery(
 				workflowDefinitionsQueryOptions(),
@@ -39,11 +39,17 @@ function Home() {
 
 	const createWorkflowMutation = useMutation({
 		mutationFn: (workflowDefId: number) =>
-			createWorkflowInstanceServerFn({ data: { workflowDefId } }),
-		onSuccess: (data) => {
+			API.workflowInstance.mutations.createWorkflowInstanceServerFn({
+				data: { workflowDefId },
+			}),
+		onSuccess: ({ id, currentState }) => {
 			queryClient.invalidateQueries({ queryKey: ["workflowInstances"] });
 			toast.success("Workflow instance created successfully");
-			navigate({ to: "/workflowInstances/$instanceId", params: { instanceId: data.id.toString() } });
+			navigate({
+				to: "/workflowInstances/$instanceId",
+				params: { instanceId: id.toString() },
+				search: { state: currentState },
+			});
 		},
 		onError: () => {
 			toast.error("Failed to create workflow instance");
@@ -64,7 +70,9 @@ function Home() {
 					disabled={createWorkflowMutation.isPending}
 					variant="default"
 				>
-					{createWorkflowMutation.isPending ? "Creating..." : "Create New Workflow"}
+					{createWorkflowMutation.isPending
+						? "Creating..."
+						: "Create New Workflow"}
 				</Button>
 			</div>
 

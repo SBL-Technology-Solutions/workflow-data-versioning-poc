@@ -2,11 +2,9 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { toast } from "sonner";
+import { API } from "@/data/API";
+import type { WorkflowInstance } from "@/data/API/workflowInstance";
 import { saveFormDataServerFn } from "@/data/formDataVersions";
-import {
-	sendWorkflowEventServerFn,
-	type WorkflowInstance,
-} from "@/data/workflowInstances";
 import {
 	createZodValidationSchema,
 	type FormSchema,
@@ -49,7 +47,7 @@ export const DynamicForm = ({
 			event: string;
 			formData: Record<string, string>;
 		}) =>
-			sendWorkflowEventServerFn({
+			API.workflowInstance.mutations.sendWorkflowEventServerFn({
 				data: {
 					instanceId: workflowInstance.id,
 					event,
