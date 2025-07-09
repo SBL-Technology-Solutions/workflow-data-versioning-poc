@@ -60,6 +60,7 @@ function RouteComponent() {
 		0,
 		allStates.indexOf(workflowInstance?.currentState || "") + 1,
 	);
+
 	const currentState = state || workflowInstance?.currentState || "";
 
 	const handleStateChange = (newState: string) => {
