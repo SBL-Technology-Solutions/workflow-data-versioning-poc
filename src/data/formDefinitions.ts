@@ -8,6 +8,11 @@ import {
 } from "@/db/schema";
 import { type FormSchema, FormSchema as zodFormSchema } from "@/lib/form";
 
+/**
+ * Retrieves the latest five form definitions from the database, ordered by creation date in descending order.
+ *
+ * @returns An array of the most recently created form definitions
+ */
 export async function getFormDefinitions() {
 	const { dbClient: db } = await import("../db");
 	return await db.query.formDefinitions.findMany({
@@ -28,7 +33,16 @@ export const formDefinitionsQueryOptions = () => ({
 	queryFn: () => fetchFormDefinitions(),
 });
 
-// For workflow instances - gets the latest form definition that has data for the instance
+/**
+ * Retrieves the latest form definition with associated data for a given workflow instance and state.
+ *
+ * If no form definition with data exists for the specified instance and state, falls back to the latest form definition for the corresponding workflow definition and state.
+ *
+ * @param workflowInstanceId - The ID of the workflow instance
+ * @param state - The workflow state to filter form definitions by
+ * @returns The latest form definition with data for the instance and state, or the latest form definition for the workflow definition and state if none exists with data
+ * @throws Error if the workflow instance is not found
+ */
 export async function getCurrentFormForInstance(
 	workflowInstanceId: number,
 	state: string,
@@ -79,7 +93,14 @@ export async function getCurrentFormForInstance(
 	return result[0];
 }
 
-// For admin form editor - gets the latest form definition for a workflow definition
+/**
+ * Retrieves the latest form definition for a given workflow definition ID and state.
+ *
+ * @param workflowDefId - The ID of the workflow definition
+ * @param state - The workflow state to filter by
+ * @returns The most recent form definition matching the workflow definition ID and state
+ * @throws If no form definition is found for the specified state
+ */
 export async function getCurrentFormForDefinition(
 	workflowDefId: number,
 	state: string,
@@ -215,6 +236,16 @@ async function migrateCompatibleFormDataVersions(
 	}
 }
 
+/**
+ * Creates a new version of a form definition for a given workflow definition and state.
+ *
+ * Determines the next version number based on existing versions, inserts the new form definition with the provided schema, and returns the inserted record's ID.
+ *
+ * @param workflowDefId - The ID of the workflow definition to associate with the form
+ * @param state - The workflow state for which the form is defined
+ * @param schema - The schema definition for the new form version
+ * @returns The ID of the newly created form definition record
+ */
 export async function createFormVersion(
 	workflowDefId: number,
 	state: string,
@@ -276,7 +307,13 @@ export const createFormVersionServerFn = createServerFn({
 		createFormVersion(workflowDefId, state, schema),
 	);
 
-// get form schema from formDefId
+/**
+ * Retrieves the schema for a form definition by its ID.
+ *
+ * @param formDefId - The ID of the form definition to retrieve the schema for
+ * @returns The schema object associated with the specified form definition
+ * @throws If no form definition with the given ID is found
+ */
 export async function getFormSchema(formDefId: number) {
 	const { dbClient } = await import("../db");
 	const formDefinition = await dbClient

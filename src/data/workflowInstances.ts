@@ -7,6 +7,14 @@ import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
 import { workflowDefinitions, workflowInstances } from "../db/schema";
 import { saveFormData } from "./formDataVersions";
 import { getFormSchema } from "./formDefinitions";
+/**
+ * Retrieves a workflow instance by its ID, including its current state and associated machine configuration.
+ *
+ * Throws an error if the workflow instance, its definition ID, or the machine configuration is not found.
+ *
+ * @param id - The unique identifier of the workflow instance to retrieve
+ * @returns An object containing the workflow instance's ID, workflow definition ID, current state, and machine configuration
+ */
 export async function getWorkflowInstance(id: number) {
 	const { dbClient: db } = await import("../db");
 	const result = await db
@@ -61,6 +69,11 @@ export const fetchWorkflowInstanceQueryOptions = (instanceId: string) =>
 		queryFn: () => fetchWorkflowInstance({ data: instanceId }),
 	});
 
+/**
+ * Retrieves the latest five workflow instances ordered by creation date in descending order.
+ *
+ * @returns An array of the most recently created workflow instance records.
+ */
 export async function listWorkflowInstances() {
 	const { dbClient: db } = await import("../db");
 	return await db
@@ -83,6 +96,13 @@ export const workflowInstancesQueryOptions = () =>
 		queryFn: () => fetchWorkflowInstances(),
 	});
 
+/**
+ * Updates the current state and timestamp of a workflow instance by its ID.
+ *
+ * @param id - The unique identifier of the workflow instance to update
+ * @param newState - The new state to set for the workflow instance
+ * @returns The updated workflow instance's ID
+ */
 export async function updateWorkflowState(id: number, newState: string) {
 	const { dbClient: db } = await import("../db");
 	const result = await db
@@ -110,6 +130,14 @@ export const updateWorkflowStateServerFn = createServerFn({
 		return updateWorkflowState(id, newState);
 	});
 
+/**
+ * Creates a new workflow instance with the initial state from the specified workflow definition.
+ *
+ * Retrieves the workflow definition by ID, determines the initial state from its machine configuration, and inserts a new workflow instance with status "active".
+ *
+ * @param workflowDefId - The ID of the workflow definition to instantiate
+ * @returns The newly created workflow instance record
+ */
 export async function createWorkflowInstance(workflowDefId: number) {
 	const { dbClient: db } = await import("../db");
 

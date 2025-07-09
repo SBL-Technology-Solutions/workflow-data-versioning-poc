@@ -6,6 +6,11 @@ import {
 } from "@/db/schema";
 import { FormSchema } from "@/lib/form";
 
+/**
+ * Populates the database with initial workflow, form, and workflow instance data for development or testing purposes.
+ *
+ * Inserts a sample workflow definition with a state machine, a corresponding form definition with validated schema, and a workflow instance linked to the created workflow. Exits the process upon completion.
+ */
 async function seed() {
 	try {
 		// Create a workflow definition

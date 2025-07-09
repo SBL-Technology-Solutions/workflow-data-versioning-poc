@@ -74,6 +74,11 @@ const useFieldContext = () => {
 	};
 };
 
+/**
+ * Renders a form field label linked to its input, displaying error styling when the field has errors and has been blurred.
+ *
+ * Applies accessibility attributes and conditional styling based on the field's error and blur state.
+ */
 function FormLabel({
 	className,
 	...props
@@ -91,6 +96,11 @@ function FormLabel({
 	);
 }
 
+/**
+ * Renders a form control component with accessibility attributes based on field state.
+ *
+ * Sets `aria-describedby` and `aria-invalid` only when the field has errors and has been blurred, ensuring error messages and descriptions are properly linked for assistive technologies.
+ */
 function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
 	const { errors, formItemId, formDescriptionId, formMessageId, isBlurred } =
 		useFieldContext();
@@ -110,6 +120,11 @@ function FormControl({ ...props }: React.ComponentProps<typeof Slot>) {
 	);
 }
 
+/**
+ * Renders a form field description with appropriate accessibility attributes.
+ *
+ * Associates the description with the form field for screen readers using a unique ID.
+ */
 function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
 	const { formDescriptionId } = useFieldContext();
 
@@ -123,6 +138,11 @@ function FormDescription({ className, ...props }: React.ComponentProps<"p">) {
 	);
 }
 
+/**
+ * Displays the first error message for a form field after it has been blurred, or renders children if no error is present.
+ *
+ * Returns `null` if there is no error message and no children to display.
+ */
 function FormMessage({ className, ...props }: React.ComponentProps<"p">) {
 	const { errors, formMessageId, isBlurred } = useFieldContext();
 	const body =
