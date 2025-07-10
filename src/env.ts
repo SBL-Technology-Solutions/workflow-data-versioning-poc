@@ -3,7 +3,10 @@ import * as z from "zod/v4";
 
 export const env = createEnv({
 	server: {
-		DATABASE_URL: z.string().min(1),
+		PGHOST: z.string().min(1),
+		PGDATABASE: z.string().min(1),
+		PGUSER: z.string().min(1),
+		PGPASSWORD: z.string().min(1),
 	},
 
 	/**
