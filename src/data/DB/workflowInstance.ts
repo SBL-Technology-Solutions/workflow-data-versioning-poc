@@ -1,6 +1,5 @@
 import { desc, eq } from "drizzle-orm";
 import { createActor, createMachine } from "xstate";
-import { DB } from "@/data/DB";
 import { dbClient } from "@/db";
 import { workflowDefinitions, workflowInstances } from "@/db/schema";
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
@@ -97,8 +96,7 @@ const sendWorkflowEvent = async (
 	await saveFormData(instanceId, formDefId, formData);
 
 	// get the workflow instance
-	const workflowInstance =
-		await DB.workflowInstance.queries.getWorkflowInstanceById(instanceId);
+	const workflowInstance = await getWorkflowInstanceById(instanceId);
 	const formSchema = await getFormSchema(formDefId);
 
 	// validate the form data against the form schema and throw an error if any of the required fields are not provided
@@ -115,7 +113,6 @@ const sendWorkflowEvent = async (
 	const resolvedState = workflowMachine.resolveState({
 		value: workflowInstance.currentState,
 	});
-	console.log("resolvedState", resolvedState);
 	const restoredActor = createActor(workflowMachine, {
 		snapshot: resolvedState,
 	});
@@ -135,8 +132,6 @@ const sendWorkflowEvent = async (
 		throw new Error("The workflow did not progress forward");
 	}
 
-	console.log("currentState", updatedState);
-
 	// persit the updated state to the db
 	const result = await dbClient
 		.update(workflowInstances)
@@ -146,7 +141,7 @@ const sendWorkflowEvent = async (
 		})
 		.where(eq(workflowInstances.id, instanceId))
 		.returning();
-	console.log("result after persisting", result);
+
 	restoredActor.stop();
 	return result[0];
 };

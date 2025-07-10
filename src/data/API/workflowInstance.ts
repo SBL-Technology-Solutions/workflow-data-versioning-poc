@@ -35,7 +35,7 @@ const getWorkflowInstancesServerFn = createServerFn({
 
 const getWorkflowInstancesQueryOptions = () =>
 	queryOptions({
-		queryKey: ["workflowInstances", { limit: 5 }],
+		queryKey: ["workflowInstances"],
 		queryFn: () => getWorkflowInstancesServerFn(),
 	});
 
