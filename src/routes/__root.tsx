@@ -1,24 +1,44 @@
+import type { QueryClient } from "@tanstack/react-query";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import {
+	createRootRouteWithContext,
 	HeadContent,
 	Outlet,
 	Scripts,
-	createRootRouteWithContext,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
 
-import Header from "@/components/Header";
-
-import appCss from "@/styles/app.css?url";
-
 import { DefaultCatchBoundary } from "@/components/DefaultCatchBoundary";
+import Header from "@/components/Header";
 import { NotFound } from "@/components/NotFound";
 import { Toaster } from "@/components/ui/sonner";
-import type { QueryClient } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import appCss from "@/styles/app.css?url";
 
 interface MyRouterContext {
 	queryClient: QueryClient;
 }
+
+// Development scripts for hot module replacement
+const devScriptsToFixHMR = () => [
+	{
+		type: "module",
+		children: `
+			import RefreshRuntime from "/@react-refresh"
+			RefreshRuntime.injectIntoGlobalHook(window)
+			window.$RefreshReg$ = () => {}
+			window.$RefreshSig$ = () => (type) => type
+			window.__vite_plugin_react_preamble_installed__ = true
+		`,
+	},
+	{
+		type: "module",
+		src: "/@vite/client",
+	},
+	{
+		type: "module",
+		src: "/~start/default-client-entry",
+	},
+];
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
 	head: () => ({
@@ -40,6 +60,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				href: appCss,
 			},
 		],
+		scripts: import.meta.env.PROD ? [] : devScriptsToFixHMR(),
 	}),
 	errorComponent: (props) => {
 		return (
