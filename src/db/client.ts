@@ -1,6 +1,5 @@
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { drizzle as drizzleLite } from "drizzle-orm/pglite";
 import { Pool } from "pg";
 import { connectionString, pgLiteUrl, usePglite } from "@/db/config";
@@ -31,14 +30,4 @@ const validateConnection = async () => {
 	}
 };
 
-const runLocalSetup = async () => {
-	if (usePglite) {
-		await migrate(dbClient as any, {
-			migrationsFolder: "./drizzle/migrations",
-		});
-		// await seedData();
-	}
-};
-
 validateConnection();
-runLocalSetup();
