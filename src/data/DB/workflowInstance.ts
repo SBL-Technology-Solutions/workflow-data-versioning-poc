@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { createActor, createMachine } from "xstate";
-import { dbClient } from "@/db";
+import { dbClient } from "@/db/client";
 import { workflowDefinitions, workflowInstances } from "@/db/schema";
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
 import { saveFormData } from "../formDataVersions";

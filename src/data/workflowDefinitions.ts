@@ -10,7 +10,7 @@ import { workflowDefinitions } from "@/db/schema";
  * @returns An array of workflow definition records.
  */
 export async function getWorkflowDefinitions() {
-	const { dbClient: db } = await import("../db");
+	const { dbClient: db } = await import("../db/client");
 	return await db.query.workflowDefinitions.findMany({
 		orderBy: desc(workflowDefinitions.createdAt),
 		limit: 5,
@@ -37,7 +37,7 @@ export const workflowDefinitionsQueryOptions = () => ({
  * @throws Error if no workflow definition with the specified ID is found
  */
 export async function getWorkflowDefinition(id: number) {
-	const { dbClient: db } = await import("../db");
+	const { dbClient: db } = await import("../db/client");
 	const workflows = await db
 		.select()
 		.from(workflowDefinitions)
