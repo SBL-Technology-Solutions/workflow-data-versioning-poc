@@ -7,24 +7,23 @@ import {
 import * as z from "zod/v4";
 import { DynamicForm } from "@/components/DynamicForm";
 import { StateSelector } from "@/components/StateSelector";
+import { API } from "@/data/API";
 import { latestCurrentFormDataQueryOptions } from "@/data/formDataVersions";
 import { getCurrentFormForInstanceQueryOptions } from "@/data/formDefinitions";
 import { getWorkflowDefinitionQueryOptions } from "@/data/workflowDefinitions";
-import { fetchWorkflowInstanceQueryOptions } from "@/data/workflowInstances";
 
 const workflowInstanceSearchSchema = z.object({
 	state: z.string().catch(""),
 });
-type WorkflowInstanceSearchSchema = z.infer<
-	typeof workflowInstanceSearchSchema
->;
 
 export const Route = createFileRoute("/workflowInstances/$instanceId")({
 	component: RouteComponent,
 	validateSearch: workflowInstanceSearchSchema,
 	loader: async ({ params, context }) => {
 		const instance = context.queryClient.prefetchQuery(
-			fetchWorkflowInstanceQueryOptions(params.instanceId),
+			API.workflowInstance.queries.getWorkflowInstanceByIdQueryOptions(
+				params.instanceId,
+			),
 		);
 
 		return { instance };
@@ -40,7 +39,11 @@ function RouteComponent() {
 		data: workflowInstance,
 		isLoading: isWorkflowInstanceLoading,
 		isError: isWorkflowInstanceError,
-	} = useSuspenseQuery(fetchWorkflowInstanceQueryOptions(instanceId || ""));
+	} = useSuspenseQuery(
+		API.workflowInstance.queries.getWorkflowInstanceByIdQueryOptions(
+			instanceId,
+		),
+	);
 
 	const {
 		data: workflowDefinition,

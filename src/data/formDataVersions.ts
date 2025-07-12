@@ -14,7 +14,7 @@ import { getFormSchema } from "./formDefinitions";
  * @returns A promise resolving to an array of the most recent form data version entries.
  */
 export async function getFormDataVersions() {
-	const { dbClient: db } = await import("../db");
+	const { dbClient: db } = await import("../db/client");
 	return await db.query.formDataVersions.findMany({
 		orderBy: desc(formDataVersions.createdAt),
 		limit: 5,
@@ -44,7 +44,7 @@ export async function getLatestCurrentFormData(
 	workflowInstanceId: number,
 	formDefId: number,
 ) {
-	const { dbClient: db } = await import("../db");
+	const { dbClient: db } = await import("../db/client");
 
 	const result = await db
 		.select({
@@ -111,7 +111,7 @@ export async function saveFormData(
 ) {
 	let patch: Operation[] = []; // First version has no changes to patch
 
-	const { dbClient } = await import("../db");
+	const { dbClient } = await import("../db/client");
 	// get form schema from formDefId and convert to zod schema
 	const formSchema = await getFormSchema(formDefId);
 	const validatedPartialData = ConvertToZodSchemaAndValidate(

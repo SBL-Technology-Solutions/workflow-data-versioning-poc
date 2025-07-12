@@ -14,7 +14,7 @@ import { type FormSchema, FormSchema as zodFormSchema } from "@/lib/form";
  * @returns An array of the most recently created form definitions
  */
 export async function getFormDefinitions() {
-	const { dbClient: db } = await import("../db");
+	const { dbClient: db } = await import("../db/client");
 	return await db.query.formDefinitions.findMany({
 		orderBy: desc(formDefinitions.createdAt),
 		limit: 5,
@@ -47,7 +47,7 @@ export async function getCurrentFormForInstance(
 	workflowInstanceId: number,
 	state: string,
 ) {
-	const { dbClient: db } = await import("../db");
+	const { dbClient: db } = await import("../db/client");
 
 	// First get the workflow instance to get its workflowDefId
 	const instance = await db
@@ -105,7 +105,7 @@ export async function getCurrentFormForDefinition(
 	workflowDefId: number,
 	state: string,
 ) {
-	const { dbClient: db } = await import("../db");
+	const { dbClient: db } = await import("../db/client");
 
 	const result = await db
 		.select({
@@ -251,7 +251,7 @@ export async function createFormVersion(
 	state: string,
 	schema: FormSchema,
 ) {
-	const { dbClient: db } = await import("../db");
+	const { dbClient: db } = await import("../db/client");
 
 	const currentVersion = await db
 		.select()
@@ -275,7 +275,7 @@ export async function createFormVersion(
 			version: nextVersion,
 			schema,
 		})
-		.returning({ id: formDefinitions.id });
+		.returning();
 
 	// Migrate compatible form data versions
 	try {
@@ -315,7 +315,7 @@ export const createFormVersionServerFn = createServerFn({
  * @throws If no form definition with the given ID is found
  */
 export async function getFormSchema(formDefId: number) {
-	const { dbClient } = await import("../db");
+	const { dbClient } = await import("../db/client");
 	const formDefinition = await dbClient
 		.select()
 		.from(formDefinitions)

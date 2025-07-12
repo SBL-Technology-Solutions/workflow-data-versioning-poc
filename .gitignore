@@ -1,6 +1,8 @@
 node_modules
 .env
 .env.local
+.env.production
+.env.*
 .output
 .vinxi
 .vercel
@@ -8,3 +10,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.pglite-db
+.tanstack
+.nitro
+.netlify
