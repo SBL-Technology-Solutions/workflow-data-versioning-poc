@@ -31,9 +31,9 @@ export const workflowDefinitions = pgTable("workflow_definitions", {
 // Form Schemas
 export const formDefinitions = pgTable("form_definitions", {
 	id: serial("id").primaryKey(),
-	workflowDefId: serial("workflow_def_id").references(
-		() => workflowDefinitions.id,
-	),
+	workflowDefId: integer("workflow_def_id")
+		.references(() => workflowDefinitions.id)
+		.notNull(),
 	state: varchar("state").notNull(), // corresponds to XState state
 	version: integer("version").notNull(),
 	schema: jsonb("schema").$type<FormSchemaType>().notNull(), // Zod schema stored as JSON
@@ -47,9 +47,9 @@ export const formDefinitions = pgTable("form_definitions", {
 // Workflow Instances
 export const workflowInstances = pgTable("workflow_instances", {
 	id: serial("id").primaryKey(),
-	workflowDefId: serial("workflow_def_id").references(
-		() => workflowDefinitions.id,
-	),
+	workflowDefId: integer("workflow_def_id")
+		.references(() => workflowDefinitions.id)
+		.notNull(),
 	currentState: varchar("current_state").notNull(),
 	status: varchar("status").notNull(), // active, completed, suspended
 	createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -62,10 +62,12 @@ export const workflowInstances = pgTable("workflow_instances", {
 // Form Data Versions
 export const formDataVersions = pgTable("form_data_versions", {
 	id: serial("id").primaryKey(),
-	workflowInstanceId: serial("workflow_instance_id").references(
-		() => workflowInstances.id,
-	),
-	formDefId: serial("form_def_id").references(() => formDefinitions.id),
+	workflowInstanceId: integer("workflow_instance_id")
+		.references(() => workflowInstances.id)
+		.notNull(),
+	formDefId: integer("form_def_id")
+		.references(() => formDefinitions.id)
+		.notNull(),
 	version: integer("version").notNull(),
 	data: jsonb("data").$type<Record<string, any>>().notNull(),
 	patch: jsonb("patch")

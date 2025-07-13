@@ -70,9 +70,13 @@ const createWorkflowInstance = async (workflowDefId: number) => {
 	}
 
 	// Extract initial state from the machine config
-	const machineConfig = workflowDef[0].machineConfig as any;
+	const machineConfig = workflowDef[0].machineConfig as {
+		initial?: string;
+		states: Record<string, any>;
+	};
+
 	const initialState =
-		machineConfig.initial || Object.keys(machineConfig.states)[0];
+		machineConfig.initial ?? Object.keys(machineConfig.states)[0];
 
 	const result = await dbClient
 		.insert(workflowInstances)
@@ -126,13 +130,13 @@ const sendWorkflowEvent = async (
 
 	// get the current state
 	const persistedSnapshot = restoredActor.getPersistedSnapshot();
-	const updatedState = (persistedSnapshot as any).value;
+	const updatedState = (persistedSnapshot as any).value as string;
 
 	if (workflowInstance.currentState === updatedState) {
 		throw new Error("The workflow did not progress forward");
 	}
 
-	// persit the updated state to the db
+	// persist the updated state to the db
 	const result = await dbClient
 		.update(workflowInstances)
 		.set({

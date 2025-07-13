@@ -80,4 +80,4 @@ export const workflowInstance = {
 		createWorkflowInstanceServerFn,
 		sendWorkflowEventServerFn,
 	},
-};
+} as const;

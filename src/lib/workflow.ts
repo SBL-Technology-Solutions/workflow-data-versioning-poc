@@ -1,5 +1,5 @@
 import { __unsafe_getAllOwnEventDescriptors, createMachine } from "xstate";
-import type { WorkflowInstance } from "@/data/API/workflowInstance";
+import type { WorkflowInstance } from "@/data/API";
 
 /**
  * Gets the current workflow state information including resolved state and available events

@@ -5,16 +5,14 @@ import { Pool } from "pg";
 import { connectionString, pgLiteUrl, usePglite } from "@/db/config";
 import * as schema from "./schema";
 
-console.log("usePglite", usePglite);
-console.log("pgLiteUrl", pgLiteUrl);
-console.log("connectionString", connectionString);
-
-const pool = new Pool({
-	connectionString,
-});
 export const dbClient = usePglite
 	? drizzleLite(new PGlite(pgLiteUrl), { schema })
-	: drizzlePg({ client: pool, schema });
+	: drizzlePg({
+			client: new Pool({
+				connectionString,
+			}),
+			schema,
+		});
 
 const validateConnection = async () => {
 	try {
@@ -25,8 +23,14 @@ const validateConnection = async () => {
 			"version",
 			result.rows[0],
 		);
+		return {
+			success: true,
+			version: result.rows[0],
+			message: "Database connection successful",
+		};
 	} catch (error) {
-		console.error(error);
+		console.error("Database connection error", error);
+		throw error;
 	}
 };
 
