@@ -1,8 +1,9 @@
 import { reset, seed } from "drizzle-seed";
-import { dbClient } from "./client";
+import { getDbClient } from "./client";
 import * as schema from "./schema";
 
 export const seedData = async () => {
+	const dbClient = getDbClient();
 	// 1) Wipe everything (truncates all tables except _drizzle_migrations)
 	await reset(dbClient, schema);
 

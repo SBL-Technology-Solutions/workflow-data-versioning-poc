@@ -1,6 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { createActor, createMachine } from "xstate";
-import { dbClient } from "@/db/client";
+import { getDbClient } from "@/db/client";
 import {
 	workflowDefinitions,
 	workflowInstances,
@@ -9,6 +9,8 @@ import {
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
 import { saveFormData } from "../formDataVersions";
 import { getFormSchema } from "../formDefinitions";
+
+const dbClient = getDbClient();
 
 /**
  * Retrieves all workflow instances ordered by creation date in descending order.

@@ -10,10 +10,21 @@ const dbClientLogger = logger.child({
 	component: "dbClient",
 });
 
-dbClientLogger.info(
-	`Connecting to the database ${usePglite ? "pglite" : "pg"}`,
-);
+let _dbClient: ReturnType<typeof drizzlePg> | ReturnType<typeof drizzleLite>;
 
+export const getDbClient = () => {
+	if (_dbClient) return _dbClient;
+	if (usePglite) {
+		const client = new PGlite(pgLiteUrl);
+		_dbClient = drizzleLite(client, { schema });
+		dbClientLogger.info("Connected to the pglite database");
+	} else {
+		const pool = new Pool({ connectionString });
+		_dbClient = drizzlePg(pool, { schema });
+		dbClientLogger.info("Connected to pg database");
+	}
+	return _dbClient;
+};
 export const dbClient = usePglite
 	? drizzleLite(new PGlite(pgLiteUrl), { schema })
 	: drizzlePg({
@@ -22,25 +33,3 @@ export const dbClient = usePglite
 			}),
 			schema,
 		});
-
-const validateConnection = async () => {
-	try {
-		const result = await dbClient.execute("SELECT version()");
-		dbClientLogger.info(
-			"successfully connected to db",
-			usePglite ? "pglite" : "pg",
-			"version",
-			result.rows[0],
-		);
-		return {
-			success: true,
-			version: result.rows[0],
-			message: "Database connection successful",
-		};
-	} catch (error) {
-		dbClientLogger.error("Database connection error", error);
-		throw error;
-	}
-};
-
-validateConnection();
