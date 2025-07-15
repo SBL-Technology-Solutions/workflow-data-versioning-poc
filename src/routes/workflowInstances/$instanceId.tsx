@@ -136,7 +136,6 @@ function RouteComponent() {
 			</div>
 
 			<DynamicForm
-				key={currentForm.formDefId}
 				schema={currentForm.schema}
 				initialData={latestCurrentFormData?.[0]?.data}
 				workflowInstance={workflowInstance}

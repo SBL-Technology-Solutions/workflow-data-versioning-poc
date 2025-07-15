@@ -16,7 +16,6 @@ import { useAppForm } from "./ui/tanstack-form";
 import { Textarea } from "./ui/textarea";
 
 interface DynamicFormProps {
-	key: number;
 	schema: FormSchema;
 	initialData?: Record<string, string>;
 	workflowInstance: WorkflowInstance;
