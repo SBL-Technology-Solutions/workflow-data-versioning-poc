@@ -10,6 +10,10 @@ const dbClientLogger = logger.child({
 	component: "dbClient",
 });
 
+dbClientLogger.info(
+	`Connecting to the database ${usePglite ? "pglite" : "pg"}`,
+);
+
 export const dbClient = usePglite
 	? drizzleLite(new PGlite(pgLiteUrl), { schema })
 	: drizzlePg({
