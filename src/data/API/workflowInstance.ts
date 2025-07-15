@@ -3,14 +3,22 @@ import { createServerFn } from "@tanstack/react-start";
 import * as z from "zod/v4";
 import { DB } from "@/data/DB";
 
-const workflowInstanceIdSchema = z
-	.string()
-	.transform((val) => Number.parseInt(val, 10));
+const workflowInstanceQueryKeys = {
+	all: () => ["workflowInstances"] as const,
+	lists: () => [...workflowInstanceQueryKeys.all(), "list"] as const,
+	list: () => [...workflowInstanceQueryKeys.lists()] as const,
+	details: () => [...workflowInstanceQueryKeys.all(), "detail"] as const,
+	detail: (id: number) => [...workflowInstanceQueryKeys.details(), id] as const,
+} as const;
+
+const WorkflowInstanceIdSchema =
+	DB.workflowInstance.queries.workflowInstancesSelectSchema.pick({ id: true })
+		.shape.id;
 
 const getWorkflowInstanceByIdServerFn = createServerFn({
 	method: "GET",
 })
-	.validator(workflowInstanceIdSchema)
+	.validator(WorkflowInstanceIdSchema)
 	.handler(async ({ data: workflowInstanceId }) => {
 		return DB.workflowInstance.queries.getWorkflowInstanceById(
 			workflowInstanceId,
@@ -21,9 +29,9 @@ export type WorkflowInstance = Awaited<
 	ReturnType<typeof getWorkflowInstanceByIdServerFn>
 >;
 
-const getWorkflowInstanceByIdQueryOptions = (instanceId: string) =>
+const getWorkflowInstanceByIdQueryOptions = (instanceId: number) =>
 	queryOptions({
-		queryKey: ["workflowInstance", instanceId],
+		queryKey: workflowInstanceQueryKeys.detail(instanceId),
 		queryFn: () => getWorkflowInstanceByIdServerFn({ data: instanceId }),
 	});
 
@@ -35,7 +43,7 @@ const getWorkflowInstancesServerFn = createServerFn({
 
 const getWorkflowInstancesQueryOptions = () =>
 	queryOptions({
-		queryKey: ["workflowInstances"],
+		queryKey: workflowInstanceQueryKeys.list(),
 		queryFn: () => getWorkflowInstancesServerFn(),
 	});
 
@@ -56,7 +64,7 @@ const sendWorkflowEventServerFn = createServerFn({
 })
 	.validator(
 		z.object({
-			instanceId: z.number(),
+			instanceId: WorkflowInstanceIdSchema,
 			event: z.string(),
 			formDefId: z.number(),
 			formData: z.record(z.string(), z.string()),
@@ -75,6 +83,7 @@ export const workflowInstance = {
 	queries: {
 		getWorkflowInstancesQueryOptions,
 		getWorkflowInstanceByIdQueryOptions,
+		queryKeys: workflowInstanceQueryKeys,
 	},
 	mutations: {
 		createWorkflowInstanceServerFn,

@@ -22,7 +22,7 @@ export const Route = createFileRoute("/workflowInstances/$instanceId")({
 	loader: async ({ params, context }) => {
 		const instance = context.queryClient.prefetchQuery(
 			API.workflowInstance.queries.getWorkflowInstanceByIdQueryOptions(
-				params.instanceId,
+				Number(params.instanceId),
 			),
 		);
 
@@ -41,7 +41,7 @@ function RouteComponent() {
 		isError: isWorkflowInstanceError,
 	} = useSuspenseQuery(
 		API.workflowInstance.queries.getWorkflowInstanceByIdQueryOptions(
-			instanceId,
+			Number(instanceId),
 		),
 	);
 

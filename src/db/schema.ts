@@ -8,12 +8,9 @@ import {
 	timestamp,
 	varchar,
 } from "drizzle-orm/pg-core";
-import type * as z from "zod/v4";
+import { createSelectSchema } from "drizzle-zod";
 import type { FormSchema } from "@/lib/form";
 
-type FormSchemaType = z.infer<typeof FormSchema>;
-
-// Workflow Definitions
 export const workflowDefinitions = pgTable("workflow_definitions", {
 	id: serial("id").primaryKey(),
 	name: varchar("name").notNull(),
@@ -28,7 +25,6 @@ export const workflowDefinitions = pgTable("workflow_definitions", {
 		.$onUpdateFn(() => new Date()),
 });
 
-// Form Schemas
 export const formDefinitions = pgTable("form_definitions", {
 	id: serial("id").primaryKey(),
 	workflowDefId: integer("workflow_def_id")
@@ -36,7 +32,7 @@ export const formDefinitions = pgTable("form_definitions", {
 		.notNull(),
 	state: varchar("state").notNull(), // corresponds to XState state
 	version: integer("version").notNull(),
-	schema: jsonb("schema").$type<FormSchemaType>().notNull(), // Zod schema stored as JSON
+	schema: jsonb("schema").$type<FormSchema>().notNull(), // Zod schema stored as JSON
 	createdAt: timestamp("created_at").notNull().defaultNow(),
 	updatedAt: timestamp("updated_at")
 		.notNull()
@@ -44,7 +40,6 @@ export const formDefinitions = pgTable("form_definitions", {
 		.$onUpdateFn(() => new Date()),
 });
 
-// Workflow Instances
 export const workflowInstances = pgTable("workflow_instances", {
 	id: serial("id").primaryKey(),
 	workflowDefId: integer("workflow_def_id")
@@ -59,7 +54,16 @@ export const workflowInstances = pgTable("workflow_instances", {
 		.$onUpdateFn(() => new Date()),
 });
 
-// Form Data Versions
+export const workflowInstancesSelectSchema = createSelectSchema(
+	workflowInstances,
+	{
+		id: (schema) =>
+			schema.refine((val) => val > 0, {
+				message: "Workflow Instance ID must be greater than 0",
+			}),
+	},
+);
+
 export const formDataVersions = pgTable("form_data_versions", {
 	id: serial("id").primaryKey(),
 	workflowInstanceId: integer("workflow_instance_id")
