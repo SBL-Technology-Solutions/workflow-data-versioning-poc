@@ -1,7 +1,16 @@
 /* // biome-ignore format: weird syntax here to for start */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap');
 @import "tailwindcss" source("../");
-
 @import "tw-animate-css";
+
+
+html, body {
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Outfit', system-ui, sans-serif;
+}
 
 @custom-variant dark (&:is(.dark *));
 

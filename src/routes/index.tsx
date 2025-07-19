@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { toast } from "sonner";
 import { FormDataVersions } from "@/components/dashboard/FormDataVersions";
 import { FormDefinitions } from "@/components/dashboard/FormDefinitions";
@@ -11,6 +11,7 @@ import { API } from "@/data/API";
 import { formDataVersionsQueryOptions } from "@/data/formDataVersions";
 import { formDefinitionsQueryOptions } from "@/data/formDefinitions";
 import { workflowDefinitionsQueryOptions } from "@/data/workflowDefinitions";
+import { SplashScreen } from "@/components/SplashScreen";
 
 export const Route = createFileRoute("/")({
 	component: Home,
@@ -36,6 +37,7 @@ export const Route = createFileRoute("/")({
 function Home() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const [showSplash, setShowSplash] = useState(true);
 
 	const createWorkflowMutation = useMutation({
 		mutationFn: (workflowDefId: number) =>
@@ -62,7 +64,9 @@ function Home() {
 	};
 
 	return (
-		<div className="p-8">
+		<div className="p-8 relative">
+			<SplashScreen show={showSplash} onDismiss={() => setShowSplash(false)} />
+
 			<div className="flex justify-between items-center mb-8">
 				<h1 className="text-2xl font-bold">Dashboard</h1>
 				<Button
