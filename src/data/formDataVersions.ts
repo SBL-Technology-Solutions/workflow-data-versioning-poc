@@ -9,31 +9,6 @@ import { createJSONPatch } from "@/lib/jsonPatch";
 import { getFormSchema } from "./formDefinitions";
 
 /**
- * Retrieves the latest five form data version records from the database, ordered by creation date descending.
- *
- * @returns A promise resolving to an array of the most recent form data version entries.
- */
-export async function getFormDataVersions() {
-	const { dbClient: db } = await import("../db/client");
-	return await db.query.formDataVersions.findMany({
-		orderBy: desc(formDataVersions.createdAt),
-		limit: 5,
-	});
-}
-
-export const fetchFormDataVersions = createServerFn({
-	method: "GET",
-}).handler(async () => {
-	console.info("Fetching form data versions");
-	return getFormDataVersions();
-});
-
-export const formDataVersionsQueryOptions = () => ({
-	queryKey: ["formDataVersions", { limit: 5 }],
-	queryFn: () => fetchFormDataVersions(),
-});
-
-/**
  * Retrieves the most recent form data version for the specified workflow instance and form definition.
  *
  * @param workflowInstanceId - The ID of the workflow instance to filter by

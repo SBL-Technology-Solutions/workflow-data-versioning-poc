@@ -8,7 +8,6 @@ import { WorkflowDefinitions } from "@/components/dashboard/WorkflowDefinitions"
 import { WorkflowInstances } from "@/components/dashboard/WorkflowInstances";
 import { Button } from "@/components/ui/button";
 import { API } from "@/data/API";
-import { formDataVersionsQueryOptions } from "@/data/formDataVersions";
 import { formDefinitionsQueryOptions } from "@/data/formDefinitions";
 
 export const Route = createFileRoute("/")({
@@ -25,7 +24,7 @@ export const Route = createFileRoute("/")({
 				formDefinitionsQueryOptions(),
 			),
 			formData: context.queryClient.prefetchQuery(
-				formDataVersionsQueryOptions(),
+				API.formDataVersion.queries.getFormDataVersionsQueryOptions(),
 			),
 		};
 	},
