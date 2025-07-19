@@ -13,6 +13,8 @@ import Header from "@/components/Header";
 import { NotFound } from "@/components/NotFound";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "@/styles/app.css?url";
+import { useEffect, useState, type ReactNode } from "react";
+import { SplashScreen } from "@/components/SplashScreen";
 
 interface MyRouterContext {
 	queryClient: QueryClient;
@@ -74,10 +76,26 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 });
 
 function RootComponent() {
+	const [showSplash, setShowSplash] = useState(() => {
+		if (typeof window == "undefined") {
+            return true;
+        }
+
+		// Show splash if not set or explicitly set to 'true'
+		const value = sessionStorage.getItem("showSplash");
+		return value === null || value === "true";
+	});
+
+	const handleDismissSplash = () => {
+		setShowSplash(false);
+		sessionStorage.setItem("showSplash", "false");
+	};
+
 	return (
 		<RootDocument>
-			<Header />
-			<Outlet />
+			<SplashScreen show={showSplash} onDismiss={handleDismissSplash} />
+			{!showSplash && <Header />}
+			{!showSplash && <Outlet />}
 			<Toaster />
 			<TanStackRouterDevtools position="bottom-left" />
 			<ReactQueryDevtools buttonPosition="bottom-right" />
@@ -85,7 +103,7 @@ function RootComponent() {
 	);
 }
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+function RootDocument({ children }: { children: ReactNode }) {
 	return (
 		<html lang="en" className="dark">
 			<head>
