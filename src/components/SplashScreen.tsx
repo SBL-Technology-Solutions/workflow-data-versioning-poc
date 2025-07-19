@@ -64,9 +64,9 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ show, onDismiss }) =
           animation: splash-btn-in 0.5s 1.0s cubic-bezier(0.4,0,0.2,1) forwards;
         }
         @keyframes splash-icon-in {
-          0% { opacity: 0; transform: scale(1.35); }
-          60% { opacity: 1; transform: scale(1.08); }
-          100% { opacity: 1; transform: scale(1); }
+          0% { opacity: 0; transform: scale(10) translateY(60px); }
+          60% { opacity: 1; transform: scale(1) translateY(0); }
+          100% { opacity: 1; transform: scale(1) translateY(0); }
         }
         @keyframes splash-title-in {
           to { opacity: 1; transform: translateY(0); }
