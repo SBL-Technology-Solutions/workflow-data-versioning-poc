@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { toast } from "sonner";
 import { FormDataVersions } from "@/components/dashboard/FormDataVersions";
 import { FormDefinitions } from "@/components/dashboard/FormDefinitions";
@@ -37,7 +37,23 @@ export const Route = createFileRoute("/")({
 function Home() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
-	const [showSplash, setShowSplash] = useState(true);
+	const [showSplash, setShowSplash] = useState<null | boolean>(null);
+
+	useEffect(() => {
+		if (typeof window !== "undefined") {
+			const splashShown = sessionStorage.getItem("splashShownThisSession");
+			if (!splashShown) {
+				setShowSplash(true);
+				sessionStorage.setItem("splashShownThisSession", "true");
+			} else {
+				setShowSplash(false);
+			}
+		}
+	}, []);
+
+	const handleDismissSplash = () => {
+		setShowSplash(false);
+	};
 
 	const createWorkflowMutation = useMutation({
 		mutationFn: (workflowDefId: number) =>
@@ -63,38 +79,45 @@ function Home() {
 		createWorkflowMutation.mutate(1);
 	};
 
+	if (showSplash === null) {
+		return null;
+	}
+
 	return (
 		<div className="p-8 relative">
-			<SplashScreen show={showSplash} onDismiss={() => setShowSplash(false)} />
+			<SplashScreen show={showSplash} onDismiss={handleDismissSplash} />
+			{!showSplash && (
+				<>
+					<div className="flex justify-between items-center mb-8">
+						<h1 className="text-2xl font-bold">Dashboard</h1>
+						<Button
+							onClick={handleCreateWorkflow}
+							disabled={createWorkflowMutation.isPending}
+							variant="default"
+						>
+							{createWorkflowMutation.isPending
+								? "Creating..."
+								: "Create New Workflow"}
+						</Button>
+					</div>
 
-			<div className="flex justify-between items-center mb-8">
-				<h1 className="text-2xl font-bold">Dashboard</h1>
-				<Button
-					onClick={handleCreateWorkflow}
-					disabled={createWorkflowMutation.isPending}
-					variant="default"
-				>
-					{createWorkflowMutation.isPending
-						? "Creating..."
-						: "Create New Workflow"}
-				</Button>
-			</div>
+					<Suspense fallback={<div>Loading workflow definitions...</div>}>
+						<WorkflowDefinitions />
+					</Suspense>
 
-			<Suspense fallback={<div>Loading workflow definitions...</div>}>
-				<WorkflowDefinitions />
-			</Suspense>
+					<Suspense fallback={<div>Loading workflow instances...</div>}>
+						<WorkflowInstances />
+					</Suspense>
 
-			<Suspense fallback={<div>Loading workflow instances...</div>}>
-				<WorkflowInstances />
-			</Suspense>
+					<Suspense fallback={<div>Loading form definitions...</div>}>
+						<FormDefinitions />
+					</Suspense>
 
-			<Suspense fallback={<div>Loading form definitions...</div>}>
-				<FormDefinitions />
-			</Suspense>
-
-			<Suspense fallback={<div>Loading form data versions...</div>}>
-				<FormDataVersions />
-			</Suspense>
+					<Suspense fallback={<div>Loading form data versions...</div>}>
+						<FormDataVersions />
+					</Suspense>
+				</>
+			)}
 		</div>
 	);
 }
