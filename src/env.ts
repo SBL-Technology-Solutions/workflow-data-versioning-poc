@@ -15,7 +15,9 @@ export const env = createEnv({
 		PGCHANNELBINDING: z.string().min(1).default("require"),
 		USE_PGLITE: z.string().default("false"),
 		PGLITE_URL: z.string().default("./.pglite-db"),
-		LOG_LEVEL: z.string().default("info"),
+		LOG_LEVEL: z
+			.enum(["error", "warn", "info", "debug", "trace"])
+			.default("info"),
 	},
 
 	/**

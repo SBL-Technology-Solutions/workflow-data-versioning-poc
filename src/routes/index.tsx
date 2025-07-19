@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { API } from "@/data/API";
 import { formDataVersionsQueryOptions } from "@/data/formDataVersions";
 import { formDefinitionsQueryOptions } from "@/data/formDefinitions";
-import { workflowDefinitionsQueryOptions } from "@/data/workflowDefinitions";
 
 export const Route = createFileRoute("/")({
 	component: Home,
@@ -20,7 +19,7 @@ export const Route = createFileRoute("/")({
 				API.workflowInstance.queries.getWorkflowInstancesQueryOptions(),
 			),
 			workflowDefinitions: context.queryClient.prefetchQuery(
-				workflowDefinitionsQueryOptions(),
+				API.workflowDefinition.queries.getWorkflowDefinitionsQueryOptions(),
 			),
 			formDefinitions: context.queryClient.prefetchQuery(
 				formDefinitionsQueryOptions(),

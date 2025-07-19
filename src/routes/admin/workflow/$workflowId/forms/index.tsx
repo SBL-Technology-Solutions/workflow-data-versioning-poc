@@ -7,8 +7,8 @@ import {
 import * as z from "zod/v4";
 import { FormBuilder } from "@/components/FormBuilder";
 import { StateSelector } from "@/components/StateSelector";
+import { API } from "@/data/API";
 import { getCurrentFormForDefinitionQueryOptions } from "@/data/formDefinitions";
-import { getWorkflowDefinitionQueryOptions } from "@/data/workflowDefinitions";
 
 const workflowDefinitionSearchSchema = z.object({
 	state: z.string().catch(""),
@@ -21,7 +21,9 @@ export const Route = createFileRoute("/admin/workflow/$workflowId/forms/")({
 	component: RouteComponent,
 	loader: async ({ params, context }) => {
 		const workflowDefinition = context.queryClient.prefetchQuery(
-			getWorkflowDefinitionQueryOptions(Number(params.workflowId)),
+			API.workflowDefinition.queries.getWorkflowDefinitionbyIdQueryOptions(
+				Number(params.workflowId),
+			),
 		);
 
 		return { workflowDefinition };
@@ -36,7 +38,9 @@ function RouteComponent() {
 	if (!workflowId) return <div>🌀 No workflow ID in URL</div>;
 
 	const { data: workflowDefinition } = useSuspenseQuery({
-		...getWorkflowDefinitionQueryOptions(Number(workflowId)),
+		...API.workflowDefinition.queries.getWorkflowDefinitionbyIdQueryOptions(
+			Number(workflowId),
+		),
 	});
 
 	if (!workflowDefinition) {

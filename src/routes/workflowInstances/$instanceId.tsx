@@ -10,7 +10,6 @@ import { StateSelector } from "@/components/StateSelector";
 import { API } from "@/data/API";
 import { latestCurrentFormDataQueryOptions } from "@/data/formDataVersions";
 import { getCurrentFormForInstanceQueryOptions } from "@/data/formDefinitions";
-import { getWorkflowDefinitionQueryOptions } from "@/data/workflowDefinitions";
 
 const workflowInstanceSearchSchema = z.object({
 	state: z.string().catch(""),
@@ -50,7 +49,9 @@ function RouteComponent() {
 		isLoading: isWorkflowDefinitionLoading,
 		isError: isWorkflowDefinitionError,
 	} = useQuery({
-		...getWorkflowDefinitionQueryOptions(workflowInstance?.workflowDefId ?? -1),
+		...API.workflowDefinition.queries.getWorkflowDefinitionbyIdQueryOptions(
+			workflowInstance?.workflowDefId ?? -1,
+		),
 		enabled: !!workflowInstance,
 	});
 

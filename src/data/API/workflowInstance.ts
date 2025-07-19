@@ -83,8 +83,8 @@ export const workflowInstance = {
 	queries: {
 		getWorkflowInstancesQueryOptions,
 		getWorkflowInstanceByIdQueryOptions,
-		queryKeys: workflowInstanceQueryKeys,
 	},
+	queryKeys: workflowInstanceQueryKeys,
 	mutations: {
 		createWorkflowInstanceServerFn,
 		sendWorkflowEventServerFn,
