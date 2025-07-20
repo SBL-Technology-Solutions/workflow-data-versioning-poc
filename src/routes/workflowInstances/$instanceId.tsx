@@ -8,7 +8,6 @@ import * as z from "zod/v4";
 import { DynamicForm } from "@/components/DynamicForm";
 import { StateSelector } from "@/components/StateSelector";
 import { API } from "@/data/API";
-import { latestCurrentFormDataQueryOptions } from "@/data/formDataVersions";
 import { getCurrentFormForInstanceQueryOptions } from "@/data/formDefinitions";
 
 const workflowInstanceSearchSchema = z.object({
@@ -92,7 +91,7 @@ function RouteComponent() {
 		isLoading: isLatestCurrentFormDataLoading,
 		isError: isLatestCurrentFormDataError,
 	} = useQuery({
-		...latestCurrentFormDataQueryOptions(
+		...API.formDataVersion.queries.latestCurrentFormDataQueryOptions(
 			Number(instanceId || "0"),
 			currentForm?.formDefId ?? -1,
 		),

@@ -1,4 +1,3 @@
-import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import { and, desc, eq } from "drizzle-orm";
 import type { Operation } from "fast-json-patch";
@@ -7,66 +6,6 @@ import { formDataVersions } from "@/db/schema";
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
 import { createJSONPatch } from "@/lib/jsonPatch";
 import { getFormSchema } from "./formDefinitions";
-
-/**
- * Retrieves the most recent form data version for the specified workflow instance and form definition.
- *
- * @param workflowInstanceId - The ID of the workflow instance to filter by
- * @param formDefId - The ID of the form definition to filter by
- * @returns An array containing the latest form data version record, or an empty array if none exist
- */
-export async function getLatestCurrentFormData(
-	workflowInstanceId: number,
-	formDefId: number,
-) {
-	const { dbClient: db } = await import("../db/client");
-
-	const result = await db
-		.select({
-			id: formDataVersions.id,
-			version: formDataVersions.version,
-			data: formDataVersions.data,
-			patch: formDataVersions.patch,
-			createdAt: formDataVersions.createdAt,
-			createdBy: formDataVersions.createdBy,
-		})
-		.from(formDataVersions)
-		.where(
-			and(
-				eq(formDataVersions.workflowInstanceId, workflowInstanceId),
-				eq(formDataVersions.formDefId, formDefId),
-			),
-		)
-		.orderBy(desc(formDataVersions.version))
-		.limit(1);
-
-	return result;
-}
-
-export const fetchLatestCurrentFormData = createServerFn({
-	method: "GET",
-})
-	.validator(
-		z.object({
-			workflowInstanceId: z.number(),
-			formDefId: z.number(),
-		}),
-	)
-	.handler(async ({ data: { workflowInstanceId, formDefId } }) => {
-		return getLatestCurrentFormData(workflowInstanceId, formDefId);
-	});
-
-export const latestCurrentFormDataQueryOptions = (
-	workflowInstanceId: number,
-	formDefId: number,
-) =>
-	queryOptions({
-		queryKey: ["latestCurrentFormData", workflowInstanceId, formDefId],
-		queryFn: () =>
-			fetchLatestCurrentFormData({
-				data: { workflowInstanceId, formDefId },
-			}),
-	});
 
 /**
  * Saves a new version of form data for a given workflow instance and form definition.

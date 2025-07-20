@@ -23,7 +23,7 @@ const getWorkflowDefinitions = async () => {
  * @returns The workflow definition matching the given ID
  * @throws Error if no workflow definition with the specified ID is found
  */
-export async function getWorkflowDefinition(id: number) {
+const getWorkflowDefinition = async (id: number) => {
 	const workflows = await dbClient
 		.select()
 		.from(workflowDefinitions)
@@ -35,7 +35,7 @@ export async function getWorkflowDefinition(id: number) {
 	}
 
 	return workflows[0];
-}
+};
 
 export const workflowDefinition = {
 	queries: {
