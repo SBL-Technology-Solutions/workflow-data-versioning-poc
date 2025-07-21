@@ -8,7 +8,6 @@ import * as z from "zod/v4";
 import { FormBuilder } from "@/components/FormBuilder";
 import { StateSelector } from "@/components/StateSelector";
 import { API } from "@/data/API";
-import { getCurrentFormForDefinitionQueryOptions } from "@/data/formDefinitions";
 
 const workflowDefinitionSearchSchema = z.object({
 	state: z.string().catch(""),
@@ -63,7 +62,7 @@ function RouteComponent() {
 		isLoading: isCurrentFormLoading,
 		isError: isCurrentFormError,
 	} = useQuery({
-		...getCurrentFormForDefinitionQueryOptions(
+		...API.formDefinition.queries.getCurrentFormDefinitionByIdQueryOptions(
 			Number(workflowId),
 			currentState,
 		),

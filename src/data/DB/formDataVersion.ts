@@ -4,7 +4,7 @@ import { dbClient } from "@/db/client";
 import { formDataVersions } from "@/db/schema";
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
 import { createJSONPatch } from "@/lib/jsonPatch";
-import { getFormSchema } from "../formDefinitions";
+import { DB } from ".";
 
 /**
  * Retrieves the latest form data version records from the database, ordered by creation date descending.
@@ -70,7 +70,8 @@ const saveFormData = async (
 	let patch: Operation[] = []; // First version has no changes to patch
 
 	// get form schema from formDefId and convert to zod schema
-	const formSchema = await getFormSchema(formDefId);
+	const formSchema =
+		await DB.formDefinition.queries.getFormSchemaById(formDefId);
 	const validatedPartialData = ConvertToZodSchemaAndValidate(
 		formSchema,
 		data,

@@ -1,8 +1,10 @@
-import { formDefinitionsQueryOptions } from "@/data/formDefinitions";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { API } from "@/data/API";
 
 export function FormDefinitions() {
-	const formDefinitionsQuery = useSuspenseQuery(formDefinitionsQueryOptions());
+	const formDefinitionsQuery = useSuspenseQuery(
+		API.formDefinition.queries.getFormDefinitionsQueryOptions(),
+	);
 
 	return (
 		<section className="mb-8">

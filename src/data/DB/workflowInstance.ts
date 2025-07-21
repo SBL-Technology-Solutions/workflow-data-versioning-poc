@@ -8,7 +8,6 @@ import {
 	workflowInstancesSelectSchema,
 } from "@/db/schema";
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
-import { getFormSchema } from "../formDefinitions";
 
 /**
  * Retrieves all workflow instances ordered by creation date in descending order.
@@ -109,7 +108,8 @@ const sendWorkflowEvent = async (
 
 	// get the workflow instance
 	const workflowInstance = await getWorkflowInstanceById(instanceId);
-	const formSchema = await getFormSchema(formDefId);
+	const formSchema =
+		await DB.formDefinition.queries.getFormSchemaById(formDefId);
 
 	// validate the form data against the form schema and throw an error if any of the required fields are not provided
 	const validatedData = ConvertToZodSchemaAndValidate(formSchema, formData);
