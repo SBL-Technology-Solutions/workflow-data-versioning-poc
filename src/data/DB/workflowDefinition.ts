@@ -1,8 +1,6 @@
 import { desc, eq } from "drizzle-orm";
-import { getDbClient } from "@/db/client";
+import { dbClient } from "@/db/client";
 import { workflowDefinitions } from "@/db/schema";
-
-const dbClient = getDbClient();
 
 /**
  * Retrieves up to five workflow definitions from the database, ordered by creation date in descending order.

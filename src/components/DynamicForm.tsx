@@ -3,7 +3,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { API, type WorkflowInstance } from "@/data/API";
-import { saveFormDataServerFn } from "@/data/formDataVersions";
 import {
 	createZodValidationSchema,
 	type FormSchema,
@@ -73,7 +72,7 @@ export const DynamicForm = ({
 
 	const saveFormData = useMutation({
 		mutationFn: (data: Record<string, string>) =>
-			saveFormDataServerFn({
+			API.formDataVersion.mutations.saveFormDataServerFn({
 				data: {
 					workflowInstanceId: workflowInstance.id,
 					formDefId,

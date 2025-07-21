@@ -18,18 +18,18 @@ const formDataVersionQueryKeys = {
 			: ([...formDataVersionQueryKeys.details(), workflowInstanceId] as const),
 } as const;
 
-export const getFormDataVersions = createServerFn({
+const getFormDataVersions = createServerFn({
 	method: "GET",
 }).handler(async () => {
 	return DB.formDataVersion.queries.getFormDataVersions();
 });
 
-export const getFormDataVersionsQueryOptions = () => ({
+const getFormDataVersionsQueryOptions = () => ({
 	queryKey: formDataVersionQueryKeys.list(),
 	queryFn: () => getFormDataVersions(),
 });
 
-export const fetchLatestCurrentFormData = createServerFn({
+const getLatestCurrentFormData = createServerFn({
 	method: "GET",
 })
 	.validator(
@@ -45,7 +45,7 @@ export const fetchLatestCurrentFormData = createServerFn({
 		);
 	});
 
-export const latestCurrentFormDataQueryOptions = (
+const getLatestCurrentFormDataQueryOptions = (
 	workflowInstanceId: number,
 	formDefId: number,
 ) =>
@@ -54,15 +54,36 @@ export const latestCurrentFormDataQueryOptions = (
 			formDefId,
 		}),
 		queryFn: () =>
-			fetchLatestCurrentFormData({
+			getLatestCurrentFormData({
 				data: { workflowInstanceId, formDefId },
 			}),
+	});
+
+const saveFormDataServerFn = createServerFn({
+	method: "POST",
+})
+	.validator(
+		z.object({
+			workflowInstanceId: z.number(),
+			formDefId: z.number(),
+			data: z.any(),
+		}),
+	)
+	.handler(async ({ data: { workflowInstanceId, formDefId, data } }) => {
+		return DB.formDataVersion.mutations.saveFormData(
+			workflowInstanceId,
+			formDefId,
+			data,
+		);
 	});
 
 export const formDataVersion = {
 	queries: {
 		getFormDataVersionsQueryOptions,
-		latestCurrentFormDataQueryOptions,
+		getLatestCurrentFormDataQueryOptions,
 	},
 	queryKeys: formDataVersionQueryKeys,
+	mutations: {
+		saveFormDataServerFn,
+	},
 };

@@ -91,7 +91,7 @@ function RouteComponent() {
 		isLoading: isLatestCurrentFormDataLoading,
 		isError: isLatestCurrentFormDataError,
 	} = useQuery({
-		...API.formDataVersion.queries.latestCurrentFormDataQueryOptions(
+		...API.formDataVersion.queries.getLatestCurrentFormDataQueryOptions(
 			Number(instanceId || "0"),
 			currentForm?.formDefId ?? -1,
 		),

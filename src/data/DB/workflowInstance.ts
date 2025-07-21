@@ -1,16 +1,14 @@
 import { desc, eq } from "drizzle-orm";
 import { createActor, createMachine } from "xstate";
-import { getDbClient } from "@/db/client";
+import { DB } from "@/data/DB";
+import { dbClient } from "@/db/client";
 import {
 	workflowDefinitions,
 	workflowInstances,
 	workflowInstancesSelectSchema,
 } from "@/db/schema";
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
-import { saveFormData } from "../formDataVersions";
 import { getFormSchema } from "../formDefinitions";
-
-const dbClient = getDbClient();
 
 /**
  * Retrieves all workflow instances ordered by creation date in descending order.
@@ -103,7 +101,11 @@ const sendWorkflowEvent = async (
 	formData: Record<string, string>,
 ) => {
 	// Save the form data to the db first so we persist data even if not all of the required data is provided
-	await saveFormData(instanceId, formDefId, formData);
+	await DB.formDataVersion.mutations.saveFormData(
+		instanceId,
+		formDefId,
+		formData,
+	);
 
 	// get the workflow instance
 	const workflowInstance = await getWorkflowInstanceById(instanceId);
