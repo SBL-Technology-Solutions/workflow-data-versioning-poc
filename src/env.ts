@@ -1,20 +1,8 @@
-import dotenvFlow from "dotenv-flow";
-
-dotenvFlow.config();
-
 import { createEnv } from "@t3-oss/env-core";
 import * as z from "zod/v4";
-
 export const env = createEnv({
 	server: {
-		PGHOST: z.string().min(1),
-		PGDATABASE: z.string().min(1),
-		PGUSER: z.string().min(1),
-		PGPASSWORD: z.string().min(1),
-		PGSSLMODE: z.string().min(1).default("require"),
-		PGCHANNELBINDING: z.string().min(1).default("require"),
-		USE_PGLITE: z.string().default("false"),
-		PGLITE_URL: z.string().default("./.pglite-db"),
+		DATABASE_URL: z.string().min(1),
 		LOG_LEVEL: z
 			.enum(["error", "warn", "info", "debug", "trace"])
 			.default("info"),
