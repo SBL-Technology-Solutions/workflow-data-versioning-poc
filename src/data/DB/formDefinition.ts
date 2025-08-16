@@ -1,16 +1,18 @@
-import { and, desc, eq } from "drizzle-orm";
+import { setResponseStatus } from "@tanstack/react-start/server";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { dbClient } from "@/db/client";
 import {
 	formDataVersions,
 	formDefinitions,
+	workflowDefinitions,
 	workflowInstances,
 } from "@/db/schema";
 import type { FormSchema } from "@/lib/form";
 
 /**
- * Retrieves the latest five form definitions from the database, ordered by creation date in descending order.
+ * Retrieves all form definitions from the database, ordered by creation date in descending order.
  *
- * @returns An array of the most recently created form definitions
+ * @returns An array of all form definitions ordered by creation date
  */
 const getFormDefinitions = async () => {
 	return await dbClient
@@ -71,7 +73,7 @@ const getCurrentFormForInstance = async (
 
 	// If no form with data exists, fall back to getting the latest form definition
 	if (!result.length) {
-		return getCurrentFormForDefinition(instance[0].workflowDefId, state);
+		return getCurrentFormForWorkflowDefId(instance[0].workflowDefId, state);
 	}
 
 	return result[0];
@@ -79,36 +81,69 @@ const getCurrentFormForInstance = async (
 
 /**
  * Retrieves the latest form definition for a given workflow definition ID and state.
+ * If no state is provided, uses the first state defined in the workflow definition.
  *
  * @param workflowDefId - The ID of the workflow definition
- * @param state - The workflow state to filter by
- * @returns The most recent form definition matching the workflow definition ID and state
- * @throws If no form definition is found for the specified state
+ * @param state - (Optional) The workflow state to filter by; if omitted, the first state is used
+ * @returns The most recent form definition and related workflow definition info for the specified workflowDefId and state
+ * @throws If no workflow definition or form definition is found for the specified workflowDefId and state
  */
-const getCurrentFormForDefinition = async (
+const getCurrentFormForWorkflowDefId = async (
 	workflowDefId: number,
-	state: string,
+	state?: string,
 ) => {
-	const result = await dbClient
+	// If no state is provided, use the first state in the workflow definition
+	const initialStateExpr = sql`
+    CASE
+      WHEN array_length(${workflowDefinitions.states}, 1) > 0
+      THEN ${workflowDefinitions.states}[1]
+      ELSE NULL
+    END
+  `;
+
+	const stateOrNull = state || null;
+	const statesJoinExpr = sql`Coalesce(${stateOrNull}, ${initialStateExpr})`;
+
+	const [result] = await dbClient
 		.select({
+			workflowDefId: workflowDefinitions.id,
+			workflowDefName: workflowDefinitions.name,
+			states: workflowDefinitions.states,
+			state: formDefinitions.state,
 			formDefId: formDefinitions.id,
 			schema: formDefinitions.schema,
+			version: formDefinitions.version,
 		})
-		.from(formDefinitions)
-		.where(
+		.from(workflowDefinitions)
+		.leftJoin(
+			formDefinitions,
 			and(
-				eq(formDefinitions.workflowDefId, workflowDefId),
-				eq(formDefinitions.state, state),
+				eq(workflowDefinitions.id, formDefinitions.workflowDefId),
+				eq(formDefinitions.state, statesJoinExpr),
 			),
 		)
+		.where(eq(workflowDefinitions.id, workflowDefId))
 		.orderBy(desc(formDefinitions.version))
 		.limit(1);
 
-	if (!result.length) {
-		throw new Error(`No form found for state: ${state}`);
+	if (!result) {
+		setResponseStatus(404);
+		throw new Error(
+			`No Workflow Definition found for workflowDefId: ${workflowDefId}`,
+		);
 	}
 
-	return result[0];
+	if (!result.states || result.states.length === 0) {
+		setResponseStatus(404);
+		throw new Error(`Invalid States: ${result.states}`);
+	}
+
+	if (result.state === null) {
+		setResponseStatus(404);
+		throw new Error(`Invalid State: ${state}`);
+	}
+
+	return result || null;
 };
 
 // Helper: Migrate compatible form data versions to new form definition
@@ -256,7 +291,7 @@ export const formDefinition = {
 	queries: {
 		getFormDefinitions,
 		getCurrentFormForInstance,
-		getCurrentFormForDefinition,
+		getCurrentFormForWorkflowDefId,
 		getFormSchemaById,
 	},
 	mutations: {

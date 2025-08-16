@@ -60,29 +60,31 @@ const getCurrentFormForInstanceQueryOptions = (
 		getCurrentFormForInstanceServerFn({ data: { workflowInstanceId, state } }),
 });
 
-const getCurrentFormDefinitionByIdServerFn = createServerFn({
+const getCurrentFormDefinitionByWorkflowDefIdServerFn = createServerFn({
 	method: "GET",
 })
 	.validator(
 		z.object({
 			workflowDefId: z.number(),
-			state: z.string(),
+			state: z.string().optional(),
 		}),
 	)
 	.handler(async ({ data: { workflowDefId, state } }) => {
-		return DB.formDefinition.queries.getCurrentFormForDefinition(
+		return DB.formDefinition.queries.getCurrentFormForWorkflowDefId(
 			workflowDefId,
 			state,
 		);
 	});
 
-const getCurrentFormDefinitionByIdQueryOptions = (
+const getCurrentFormDefinitionByWorkflowDefIdQueryOptions = (
 	workflowDefId: number,
-	state: string,
+	state?: string,
 ) => ({
 	queryKey: formDefinitionQueryKeys.detail(workflowDefId, { state }),
 	queryFn: () =>
-		getCurrentFormDefinitionByIdServerFn({ data: { workflowDefId, state } }),
+		getCurrentFormDefinitionByWorkflowDefIdServerFn({
+			data: { workflowDefId, state },
+		}),
 });
 
 const createFormVersionServerFn = createServerFn({
@@ -103,7 +105,7 @@ export const formDefinition = {
 	queries: {
 		getFormDefinitionsQueryOptions,
 		getCurrentFormForInstanceQueryOptions,
-		getCurrentFormDefinitionByIdQueryOptions,
+		getCurrentFormDefinitionByWorkflowDefIdQueryOptions,
 	},
 	mutations: {
 		createFormVersionServerFn,
