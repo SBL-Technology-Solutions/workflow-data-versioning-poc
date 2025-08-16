@@ -1,11 +1,12 @@
-/* // biome-ignore format: weird syntax here to for start */
-@import "tailwindcss" source("../");
+/* biome-ignore format: unusual syntax needed for Tailwind import */
+@import "@fontsource-variable/outfit/index.css";
+@import "tailwindcss";
 
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
+	--font-sans: 'Outfit', system-ui, sans-serif;
 	--background: oklch(1 0 0);
 	--foreground: oklch(0.145 0 0);
 	--card: oklch(1 0 0);
