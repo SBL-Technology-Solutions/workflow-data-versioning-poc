@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 interface SplashScreenProps {
   show: boolean;
@@ -17,7 +18,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ show, onDismiss }) =
   return (
     <Dialog open={show} onOpenChange={(open) => !open && onDismiss?.()}>
       <DialogContent 
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black border-none max-w-none h-screen w-screen p-0 transition-opacity duration-700 !top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-none"
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black border-none p-0 !top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-none"
         showCloseButton={false}
       >
         <div className="flex flex-col items-center w-full max-w-lg px-4 mt-[-10vh]">
@@ -74,7 +75,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ show, onDismiss }) =
           </DialogHeader>
           
           {/* Button Animation */}
-          <motion.button
+          <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ 
@@ -84,11 +85,14 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ show, onDismiss }) =
             }}
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.98 }}
-            className="px-24 py-3 rounded-xl border text-base text-white font-normal shadow-lg transition-colors duration-150 focus:outline-none focus:ring-2 bg-[#6C5B7B] border-[#4B3C57] hover:bg-[#4B3C57] shadow-[0_2px_16px_0_rgba(0,0,0,0.10)]"
-            onClick={onDismiss}
           >
-            Get started
-          </motion.button>
+            <Button 
+              onClick={onDismiss}
+              className="px-24 py-3 rounded-lg bg-[#6C5B7B] hover:bg-[#4B3C57] text-gray-200"
+            >
+              Get started
+            </Button>
+          </motion.div>
         </div>
       </DialogContent>
     </Dialog>
