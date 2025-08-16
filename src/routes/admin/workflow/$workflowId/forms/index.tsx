@@ -38,6 +38,9 @@ function RouteComponent() {
 		),
 	});
 
+	const effectiveState =
+		workflowDefinitionAndFormDefinition.state ?? state ?? "";
+
 	const handleStateChange = (newState: string) => {
 		navigate({
 			to: "/admin/workflow/$workflowId/forms",
@@ -55,7 +58,7 @@ function RouteComponent() {
 					</h1>
 					<StateSelector
 						states={workflowDefinitionAndFormDefinition.states ?? []}
-						currentState={workflowDefinitionAndFormDefinition.state ?? ""}
+						currentState={effectiveState}
 						onStateChange={handleStateChange}
 					/>
 				</div>
@@ -68,7 +71,7 @@ function RouteComponent() {
 					}
 				}
 				workflowId={Number(workflowId)}
-				state={state}
+				state={effectiveState}
 				key={workflowDefinitionAndFormDefinition.formDefId}
 			/>
 		</div>

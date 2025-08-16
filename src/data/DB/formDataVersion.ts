@@ -1,7 +1,14 @@
-import { and, desc, eq } from "drizzle-orm";
+import { setResponseStatus } from "@tanstack/react-start/server";
+import { and, desc, eq, sql } from "drizzle-orm";
 import type { Operation } from "fast-json-patch";
+import * as z from "zod/v4";
 import { dbClient } from "@/db/client";
-import { formDataVersions } from "@/db/schema";
+import {
+	formDataVersions,
+	formDefinitions,
+	workflowDefinitions,
+	workflowInstances,
+} from "@/db/schema";
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
 import { createJSONPatch } from "@/lib/jsonPatch";
 import { DB } from ".";
@@ -18,37 +25,107 @@ const getFormDataVersions = async () => {
 		.orderBy(desc(formDataVersions.createdAt));
 };
 
-/**
- * Retrieves the most recent form data version for the specified workflow instance and form definition.
- *
- * @param workflowInstanceId - The ID of the workflow instance to filter by
- * @param formDefId - The ID of the form definition to filter by
- * @returns An array containing the latest form data version record, or an empty array if none exist
- */
-const getLatestCurrentFormData = async (
+const getCurrentFormDataForWorkflowInstance = async (
 	workflowInstanceId: number,
-	formDefId: number,
+	state?: string,
 ) => {
-	const result = await dbClient
+	const stateOrNull = state || null;
+	const currentStateSchema =
+		DB.workflowInstance.queries.workflowInstancesSelectSchema.pick({
+			currentState: true,
+		}).shape.currentState;
+	type CurrentState = z.infer<typeof currentStateSchema>;
+	const providedStateOrCurrentState = sql<CurrentState>`Coalesce(${stateOrNull}, ${workflowInstances.currentState})`;
+
+	const [result] = await dbClient
 		.select({
-			id: formDataVersions.id,
-			version: formDataVersions.version,
+			workflowInstanceId: workflowInstances.id,
+			workflowInstanceCurrentState: workflowInstances.currentState,
+			workflowInstanceState: providedStateOrCurrentState,
+			workflowInstanceStatus: workflowInstances.status,
+			workflowDefinitionId: workflowDefinitions.id,
+			workflowDefinitionStates: workflowDefinitions.states,
+			workflowDefinitionMachineConfig: workflowDefinitions.machineConfig,
+			formDefinitionId: formDefinitions.id,
+			formDefinitionSchema: formDefinitions.schema,
 			data: formDataVersions.data,
-			patch: formDataVersions.patch,
-			createdAt: formDataVersions.createdAt,
-			createdBy: formDataVersions.createdBy,
+			dataVersion: formDataVersions.version,
 		})
-		.from(formDataVersions)
-		.where(
+		.from(workflowInstances)
+		.leftJoin(
+			workflowDefinitions,
+			eq(workflowInstances.workflowDefId, workflowDefinitions.id),
+		)
+		.leftJoin(
+			formDefinitions,
 			and(
-				eq(formDataVersions.workflowInstanceId, workflowInstanceId),
-				eq(formDataVersions.formDefId, formDefId),
+				eq(formDefinitions.workflowDefId, workflowDefinitions.id),
+				eq(formDefinitions.state, providedStateOrCurrentState),
 			),
 		)
+		.leftJoin(
+			formDataVersions,
+			and(
+				eq(formDataVersions.workflowInstanceId, workflowInstanceId),
+				eq(formDataVersions.formDefId, formDefinitions.id),
+			),
+		)
+		.where(eq(workflowInstances.id, workflowInstanceId))
 		.orderBy(desc(formDataVersions.version))
 		.limit(1);
 
-	return result;
+	if (!result) {
+		setResponseStatus(404);
+		throw new Error(
+			`No Workflow Instance found for workfow instance: ${workflowInstanceId}`,
+		);
+	}
+
+	if (!result.formDefinitionSchema) {
+		setResponseStatus(404);
+		throw new Error(`No schema found for this state ${state}`);
+	}
+
+	if (!result.workflowDefinitionMachineConfig) {
+		setResponseStatus(404);
+		throw new Error(
+			`No machine configuration found for this workflow instance ${workflowInstanceId}`,
+		);
+	}
+
+	if (!result.formDefinitionId) {
+		setResponseStatus(404);
+		throw new Error(`No form definition found for this state ${state}`);
+	}
+
+	// Throw an error if the provided state is past the currentState in the ordered array of states
+	if (
+		result.workflowDefinitionStates &&
+		result.workflowInstanceCurrentState &&
+		state
+	) {
+		const states = result.workflowDefinitionStates;
+		const currentStateIndex = states.indexOf(
+			result.workflowInstanceCurrentState,
+		);
+		const providedStateIndex = states.indexOf(state);
+
+		if (providedStateIndex === -1) {
+			setResponseStatus(404);
+			throw new Error(
+				`Provided state "${state}" is not a valid state for this workflow`,
+			);
+		}
+
+		if (providedStateIndex > currentStateIndex) {
+			setResponseStatus(400);
+			throw new Error(
+				`Provided state "${state}" is past the current state "${result.workflowInstanceCurrentState}" in the workflow`,
+			);
+		}
+	}
+
+	return result || null;
 };
 
 /**
@@ -117,7 +194,7 @@ const saveFormData = async (
 export const formDataVersion = {
 	queries: {
 		getFormDataVersions,
-		getLatestCurrentFormData,
+		getCurrentFormDataForWorkflowInstance,
 	},
 	mutations: {
 		saveFormData,

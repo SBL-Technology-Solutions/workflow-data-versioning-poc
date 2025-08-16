@@ -9,12 +9,12 @@ import type { WorkflowInstance } from "@/data/API";
  */
 export const getNextEvents = (
 	machineConfig: Record<string, unknown>,
-	workflowInstance: WorkflowInstance,
+	currentState: string,
 ): string[] => {
 	const workflowMachine = createMachine(machineConfig);
 
 	const resolvedState = workflowMachine.resolveState({
-		value: workflowInstance.currentState,
+		value: currentState,
 	});
 
 	const nextEvents = __unsafe_getAllOwnEventDescriptors(resolvedState);

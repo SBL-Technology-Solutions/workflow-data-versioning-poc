@@ -29,33 +29,31 @@ const getFormDataVersionsQueryOptions = () => ({
 	queryFn: () => getFormDataVersions(),
 });
 
-const getLatestCurrentFormData = createServerFn({
+const getCurrentFormDataForWorkflowInstanceServerFn = createServerFn({
 	method: "GET",
 })
 	.validator(
 		z.object({
 			workflowInstanceId: z.number(),
-			formDefId: z.number(),
+			state: z.string().optional(),
 		}),
 	)
-	.handler(async ({ data: { workflowInstanceId, formDefId } }) => {
-		return DB.formDataVersion.queries.getLatestCurrentFormData(
+	.handler(async ({ data: { workflowInstanceId, state } }) => {
+		return DB.formDataVersion.queries.getCurrentFormDataForWorkflowInstance(
 			workflowInstanceId,
-			formDefId,
+			state,
 		);
 	});
 
-const getLatestCurrentFormDataQueryOptions = (
+const getCurrentFormDataForWorkflowInstanceQueryOptions = (
 	workflowInstanceId: number,
-	formDefId: number,
+	state?: string,
 ) =>
 	queryOptions({
-		queryKey: formDataVersionQueryKeys.detail(workflowInstanceId, {
-			formDefId,
-		}),
+		queryKey: formDataVersionQueryKeys.detail(workflowInstanceId, { state }),
 		queryFn: () =>
-			getLatestCurrentFormData({
-				data: { workflowInstanceId, formDefId },
+			getCurrentFormDataForWorkflowInstanceServerFn({
+				data: { workflowInstanceId, state },
 			}),
 	});
 
@@ -80,7 +78,7 @@ const saveFormDataServerFn = createServerFn({
 export const formDataVersion = {
 	queries: {
 		getFormDataVersionsQueryOptions,
-		getLatestCurrentFormDataQueryOptions,
+		getCurrentFormDataForWorkflowInstanceQueryOptions,
 	},
 	queryKeys: formDataVersionQueryKeys,
 	mutations: {

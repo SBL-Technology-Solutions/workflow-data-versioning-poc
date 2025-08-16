@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { toast } from "sonner";
-import { API, type WorkflowInstance } from "@/data/API";
+import { API } from "@/data/API";
 import {
 	createZodValidationSchema,
 	type FormSchema,
@@ -17,7 +17,8 @@ import { Textarea } from "./ui/textarea";
 interface DynamicFormProps {
 	schema: FormSchema;
 	initialData?: Record<string, string>;
-	workflowInstance: WorkflowInstance;
+	workflowInstanceId: number;
+	state: string;
 	formDefId: number;
 	//TODO: improve this typing
 	machineConfig: Record<string, unknown>;
@@ -30,7 +31,8 @@ const defaultSubmitMeta: { event: string | null } = {
 export const DynamicForm = ({
 	schema,
 	initialData,
-	workflowInstance,
+	workflowInstanceId,
+	state,
 	formDefId,
 	machineConfig,
 }: DynamicFormProps) => {
@@ -46,7 +48,7 @@ export const DynamicForm = ({
 		}) =>
 			API.workflowInstance.mutations.sendWorkflowEventServerFn({
 				data: {
-					instanceId: workflowInstance.id,
+					instanceId: workflowInstanceId,
 					event,
 					formDefId,
 					formData,
@@ -54,14 +56,14 @@ export const DynamicForm = ({
 			}),
 		onSuccess: (result) => {
 			queryClient.invalidateQueries({
-				queryKey: ["workflowInstance", workflowInstance.id],
+				queryKey: ["workflowInstance", workflowInstanceId],
 			});
 			toast.success("Event sent successfully");
 			// update path to next state
 			navigate({
 				to: "/workflowInstances/$instanceId",
 				params: {
-					instanceId: workflowInstance.id.toString(),
+					instanceId: workflowInstanceId.toString(),
 				},
 				search: {
 					state: result.currentState,
@@ -74,7 +76,7 @@ export const DynamicForm = ({
 		mutationFn: (data: Record<string, string>) =>
 			API.formDataVersion.mutations.saveFormDataServerFn({
 				data: {
-					workflowInstanceId: workflowInstance.id,
+					workflowInstanceId: workflowInstanceId,
 					formDefId,
 					data,
 				},
@@ -101,8 +103,8 @@ export const DynamicForm = ({
 	);
 
 	const nextEvents = useMemo(
-		() => getNextEvents(machineConfig, workflowInstance),
-		[machineConfig, workflowInstance],
+		() => getNextEvents(machineConfig, state),
+		[machineConfig, state],
 	);
 
 	const form = useAppForm({
