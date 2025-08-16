@@ -1,11 +1,10 @@
 import React from "react";
 import {
   Dialog,
+  DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogPortal,
-  DialogOverlay,
 } from "@/components/ui/dialog";
 
 interface SplashScreenProps {
@@ -16,12 +15,11 @@ interface SplashScreenProps {
 export const SplashScreen: React.FC<SplashScreenProps> = ({ show, onDismiss }) => {
   return (
     <Dialog open={show} onOpenChange={(open) => !open && onDismiss?.()}>
-      <DialogPortal>
-        <DialogOverlay className="bg-black" />
-        <div 
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black border-none max-w-none h-screen w-screen p-0 transition-opacity duration-700"
-          style={{ transitionProperty: "opacity", willChange: "opacity" }}
-        >
+      <DialogContent 
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black border-none max-w-none h-screen w-screen p-0 transition-opacity duration-700 !top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-none"
+        style={{ transitionProperty: "opacity", willChange: "opacity" }}
+        showCloseButton={false}
+      >
         <div className="flex flex-col items-center w-full max-w-lg px-4 mt-[-10vh]">
           {/* Abstract Workflow Icon */}
           <div className="splash-icon-anim mb-0">
@@ -95,8 +93,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ show, onDismiss }) =
             to { opacity: 1; transform: translateY(0); }
           }
         `}</style>
-        </div>
-      </DialogPortal>
+      </DialogContent>
     </Dialog>
   );
 };
