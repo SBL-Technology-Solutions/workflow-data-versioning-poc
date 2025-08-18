@@ -33,7 +33,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ show, onDismiss }) =
             className="mb-0"
           >
             <img
-              src="/assets/approveOS_icon.svg"
+              src="/assets/approveOS_icon_optimized.svg"
               alt="ApproveOS Icon"
               className="w-32 h-32 md:w-40 md:h-40 block brightness-200 drop-shadow-[0_0_3px_#fff] grayscale"
             />
