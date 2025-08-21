@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import iconUrl from "@/assets/approveOS_icon_optimized.svg?url";
 
 interface SplashScreenProps {
   show: boolean;
@@ -33,8 +34,12 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ show, onDismiss }) =
             className="mb-0"
           >
             <img
-              src="/assets/icon.svg"
+              src={iconUrl}
               alt="ApproveOS Icon"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              draggable="false"
               className="w-32 h-32 md:w-40 md:h-40 block brightness-200 drop-shadow-[0_0_3px_#fff] grayscale"
             />
           </motion.div>
