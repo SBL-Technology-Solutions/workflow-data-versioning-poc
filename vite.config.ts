@@ -11,7 +11,4 @@ export default defineConfig({
 			target: "netlify",
 		}),
 	],
-	build: {
-		assetsInlineLimit: 0,
-	},
 });
