@@ -1,7 +1,7 @@
 import type { AnyFieldApi } from "@tanstack/react-form";
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { createFormVersionServerFn } from "@/data/formDefinitions";
+import { API } from "@/data/API";
 import {
 	type FormFieldSchema,
 	type FormSchema,
@@ -46,7 +46,7 @@ export const FormBuilder = ({
 		onSubmit: async (data) => {
 			console.log("submitted", data.value);
 			try {
-				await createFormVersionServerFn({
+				await API.formDefinition.mutations.createFormVersionServerFn({
 					data: { workflowDefId: workflowId, state, schema: data.value },
 				});
 				toast.success("Form definition saved successfully");

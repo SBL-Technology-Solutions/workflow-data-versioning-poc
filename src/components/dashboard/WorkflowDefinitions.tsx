@@ -1,10 +1,10 @@
-import { workflowDefinitionsQueryOptions } from "@/data/workflowDefinitions";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
+import { API } from "@/data/API";
 
 export function WorkflowDefinitions() {
 	const workflowDefinitionsQuery = useSuspenseQuery(
-		workflowDefinitionsQueryOptions(),
+		API.workflowDefinition.queries.getWorkflowDefinitionsQueryOptions(),
 	);
 
 	return (
@@ -18,6 +18,7 @@ export function WorkflowDefinitions() {
 						ID:{" "}
 						<Link
 							to={"/admin/workflow/$workflowId/forms"}
+							search={{ state: wf.machineConfig.initial }}
 							params={{ workflowId: wf.id.toString() }}
 							className="text-blue-500 hover:underline"
 						>

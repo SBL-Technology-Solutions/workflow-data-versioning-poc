@@ -3,8 +3,6 @@ import { useNavigate } from "@tanstack/react-router";
 import { useMemo } from "react";
 import { toast } from "sonner";
 import { API } from "@/data/API";
-import type { WorkflowInstance } from "@/data/API/workflowInstance";
-import { saveFormDataServerFn } from "@/data/formDataVersions";
 import {
 	createZodValidationSchema,
 	type FormSchema,
@@ -17,10 +15,10 @@ import { useAppForm } from "./ui/tanstack-form";
 import { Textarea } from "./ui/textarea";
 
 interface DynamicFormProps {
-	key: number;
 	schema: FormSchema;
 	initialData?: Record<string, string>;
-	workflowInstance: WorkflowInstance;
+	workflowInstanceId: number;
+	state: string;
 	formDefId: number;
 	//TODO: improve this typing
 	machineConfig: Record<string, unknown>;
@@ -33,7 +31,8 @@ const defaultSubmitMeta: { event: string | null } = {
 export const DynamicForm = ({
 	schema,
 	initialData,
-	workflowInstance,
+	workflowInstanceId,
+	state,
 	formDefId,
 	machineConfig,
 }: DynamicFormProps) => {
@@ -49,22 +48,26 @@ export const DynamicForm = ({
 		}) =>
 			API.workflowInstance.mutations.sendWorkflowEventServerFn({
 				data: {
-					instanceId: workflowInstance.id,
+					instanceId: workflowInstanceId,
 					event,
 					formDefId,
 					formData,
 				},
 			}),
 		onSuccess: (result) => {
-			queryClient.invalidateQueries({
-				queryKey: ["workflowInstance", workflowInstance.id],
-			});
 			toast.success("Event sent successfully");
-			// update path to next state
+			queryClient.invalidateQueries({
+				queryKey: API.formDataVersion.queryKeys.detail(workflowInstanceId, {
+					state: result.currentState,
+				}),
+			});
+			queryClient.invalidateQueries({
+				queryKey: API.workflowInstance.queryKeys.lists(),
+			});
 			navigate({
 				to: "/workflowInstances/$instanceId",
 				params: {
-					instanceId: workflowInstance.id.toString(),
+					instanceId: workflowInstanceId.toString(),
 				},
 				search: {
 					state: result.currentState,
@@ -75,15 +78,20 @@ export const DynamicForm = ({
 
 	const saveFormData = useMutation({
 		mutationFn: (data: Record<string, string>) =>
-			saveFormDataServerFn({
+			API.formDataVersion.mutations.saveFormDataServerFn({
 				data: {
-					workflowInstanceId: workflowInstance.id,
+					workflowInstanceId: workflowInstanceId,
 					formDefId,
 					data,
 				},
 			}),
 		onSuccess: () => {
 			toast.success("Form saved successfully");
+			queryClient.invalidateQueries({
+				queryKey: API.formDataVersion.queryKeys.detail(workflowInstanceId, {
+					state,
+				}),
+			});
 		},
 		//TODO: improve rendering of zod errors in toast as its losing the formatting by the time it gets here
 		onError: (error) => {
@@ -104,8 +112,8 @@ export const DynamicForm = ({
 	);
 
 	const nextEvents = useMemo(
-		() => getNextEvents(machineConfig, workflowInstance),
-		[machineConfig, workflowInstance],
+		() => getNextEvents(machineConfig, state),
+		[machineConfig, state],
 	);
 
 	const form = useAppForm({

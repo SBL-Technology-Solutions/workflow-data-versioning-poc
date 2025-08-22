@@ -1,8 +1,10 @@
-import { formDataVersionsQueryOptions } from "@/data/formDataVersions";
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { API } from "@/data/API";
 
 export function FormDataVersions() {
-	const formData = useSuspenseQuery(formDataVersionsQueryOptions());
+	const formData = useSuspenseQuery(
+		API.formDataVersion.queries.getFormDataVersionsQueryOptions(),
+	);
 
 	return (
 		<section className="mb-8">

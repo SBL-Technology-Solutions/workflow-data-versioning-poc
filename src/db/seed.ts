@@ -17,7 +17,7 @@ export const seedData = async () => {
 	// extract the 'initial' state for use in other tables
 	const initialStates = machineConfig.initial;
 
-	const formDefinition = {
+	const formDefinition1 = {
 		title: "Personal Information",
 		description: "Please fill out your personal information",
 		fields: [
@@ -49,6 +49,36 @@ export const seedData = async () => {
 		],
 	};
 
+	const formDefinition2 = {
+		title: "Contact Information",
+		description: "Please provide your contact details",
+		fields: [
+			{
+				name: "email",
+				type: "text" as const,
+				label: "Email Address",
+				required: true,
+				pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+			},
+			{
+				name: "phone",
+				type: "text" as const,
+				label: "Phone Number",
+				required: false,
+				pattern: "^\\+?[1-9]\\d{1,14}$",
+			},
+			{
+				name: "address",
+				type: "textarea" as const,
+				label: "Mailing Address",
+				description: "Your complete mailing address",
+				required: false,
+				rows: 3,
+				maxLength: 200,
+			},
+		],
+	};
+
 	// 3) Seed all tables, refining only the columns we care about:
 	await seed(dbClient, {
 		workflowDefinitions: schema.workflowDefinitions,
@@ -59,17 +89,26 @@ export const seedData = async () => {
 			count: 1,
 			columns: {
 				machineConfig: f.default({ defaultValue: machineConfig }),
+				version: f.int({ minValue: 1, isUnique: true }),
 			},
 		},
 		formDefinitions: {
-			// one formDefinition per workflowDefinition
 			count: 1,
 			columns: {
 				state: f.default({ defaultValue: initialStates }),
-				schema: f.default({ defaultValue: formDefinition }),
+				schema: f.default({ defaultValue: formDefinition1 }),
+				version: f.int({ minValue: 1, isUnique: true }),
 			},
 		},
 	}));
+
+	// 4) Insert the second form definition manually with correct schema
+	await dbClient.insert(schema.formDefinitions).values({
+		state: "form2",
+		schema: formDefinition2,
+		workflowDefId: 1, // Reference to the workflow definition we just created
+		version: 1,
+	});
 };
 
 async function main() {

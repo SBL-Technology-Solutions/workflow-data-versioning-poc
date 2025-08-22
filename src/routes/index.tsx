@@ -8,9 +8,6 @@ import { WorkflowDefinitions } from "@/components/dashboard/WorkflowDefinitions"
 import { WorkflowInstances } from "@/components/dashboard/WorkflowInstances";
 import { Button } from "@/components/ui/button";
 import { API } from "@/data/API";
-import { formDataVersionsQueryOptions } from "@/data/formDataVersions";
-import { formDefinitionsQueryOptions } from "@/data/formDefinitions";
-import { workflowDefinitionsQueryOptions } from "@/data/workflowDefinitions";
 
 export const Route = createFileRoute("/")({
 	component: Home,
@@ -20,13 +17,13 @@ export const Route = createFileRoute("/")({
 				API.workflowInstance.queries.getWorkflowInstancesQueryOptions(),
 			),
 			workflowDefinitions: context.queryClient.prefetchQuery(
-				workflowDefinitionsQueryOptions(),
+				API.workflowDefinition.queries.getWorkflowDefinitionsQueryOptions(),
 			),
 			formDefinitions: context.queryClient.prefetchQuery(
-				formDefinitionsQueryOptions(),
+				API.formDefinition.queries.getFormDefinitionsQueryOptions(),
 			),
 			formData: context.queryClient.prefetchQuery(
-				formDataVersionsQueryOptions(),
+				API.formDataVersion.queries.getFormDataVersionsQueryOptions(),
 			),
 		};
 	},

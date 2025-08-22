@@ -1,31 +1,28 @@
-import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
+import { useSuspenseQuery } from "@tanstack/react-query";
 import {
 	createFileRoute,
 	useNavigate,
 	useSearch,
 } from "@tanstack/react-router";
-import * as z from "zod/v4";
+import * as z from "zod";
 import { FormBuilder } from "@/components/FormBuilder";
 import { StateSelector } from "@/components/StateSelector";
-import { getCurrentFormForDefinitionQueryOptions } from "@/data/formDefinitions";
-import { getWorkflowDefinitionQueryOptions } from "@/data/workflowDefinitions";
+import { API } from "@/data/API";
 
 const workflowDefinitionSearchSchema = z.object({
 	state: z.string().catch(""),
 });
-type WorkflowDefinitionSearchSchema = z.infer<
-	typeof workflowDefinitionSearchSchema
->;
 
 export const Route = createFileRoute("/admin/workflow/$workflowId/forms/")({
 	component: RouteComponent,
-	loader: async ({ params, context }) => {
-		const workflowDefinition = context.queryClient.prefetchQuery(
-			getWorkflowDefinitionQueryOptions(Number(params.workflowId)),
-		);
-
-		return { workflowDefinition };
-	},
+	loaderDeps: ({ search: { state } }) => ({ state }),
+	loader: ({ params, context, deps: { state } }) =>
+		context.queryClient.ensureQueryData(
+			API.formDefinition.queries.getCurrentFormDefinitionByWorkflowDefIdQueryOptions(
+				Number(params.workflowId),
+				state,
+			),
+		),
 	validateSearch: workflowDefinitionSearchSchema,
 });
 
@@ -33,18 +30,16 @@ function RouteComponent() {
 	const { workflowId } = Route.useParams();
 	const { state } = useSearch({ from: "/admin/workflow/$workflowId/forms/" });
 	const navigate = useNavigate();
-	if (!workflowId) return <div>🌀 No workflow ID in URL</div>;
 
-	const { data: workflowDefinition } = useSuspenseQuery({
-		...getWorkflowDefinitionQueryOptions(Number(workflowId)),
+	const { data: workflowDefinitionAndFormDefinition } = useSuspenseQuery({
+		...API.formDefinition.queries.getCurrentFormDefinitionByWorkflowDefIdQueryOptions(
+			Number(workflowId),
+			state,
+		),
 	});
 
-	if (!workflowDefinition) {
-		return <div>Workflow not found</div>;
-	}
-
-	const states = Object.keys(workflowDefinition.machineConfig.states);
-	const currentState = state || states[0];
+	const effectiveState =
+		workflowDefinitionAndFormDefinition.state ?? state ?? "";
 
 	const handleStateChange = (newState: string) => {
 		navigate({
@@ -54,51 +49,30 @@ function RouteComponent() {
 		});
 	};
 
-	const {
-		data: currentForm,
-		isLoading: isCurrentFormLoading,
-		isError: isCurrentFormError,
-	} = useQuery({
-		...getCurrentFormForDefinitionQueryOptions(
-			Number(workflowId),
-			currentState,
-		),
-	});
-
-	if (isCurrentFormLoading) return <div>Loading...</div>;
-	if (isCurrentFormError) return <div>Error loading current form</div>;
-	if (!currentForm) return <div>No form found</div>;
-
 	return (
 		<div className="container mx-auto p-4">
 			<div className="flex justify-between items-center mb-6">
 				<div className="space-y-2">
 					<h1 className="text-2xl font-bold">
-						Edit Form: {workflowDefinition.name}
+						Edit Form: {workflowDefinitionAndFormDefinition.workflowDefName}
 					</h1>
 					<StateSelector
-						states={states}
-						currentState={currentState}
+						states={workflowDefinitionAndFormDefinition.states ?? []}
+						currentState={effectiveState}
 						onStateChange={handleStateChange}
 					/>
 				</div>
-				{/* <Link
-					to="/admin/workflows"
-					className="text-blue-500 hover:text-blue-700"
-				>
-					Back to Workflows
-				</Link> */}
 			</div>
 			<FormBuilder
 				initialSchema={
-					currentForm.schema || {
+					workflowDefinitionAndFormDefinition.schema ?? {
 						title: "",
 						fields: [],
 					}
 				}
 				workflowId={Number(workflowId)}
-				state={currentState}
-				key={currentForm.formDefId}
+				state={effectiveState}
+				key={`${workflowId}-${effectiveState}-${workflowDefinitionAndFormDefinition.formDefId ?? "new"}`}
 			/>
 		</div>
 	);

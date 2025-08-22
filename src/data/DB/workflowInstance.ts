@@ -1,10 +1,13 @@
 import { desc, eq } from "drizzle-orm";
 import { createActor, createMachine } from "xstate";
+import { DB } from "@/data/DB";
 import { dbClient } from "@/db/client";
-import { workflowDefinitions, workflowInstances } from "@/db/schema";
+import {
+	workflowDefinitions,
+	workflowInstances,
+	workflowInstancesSelectSchema,
+} from "@/db/schema";
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
-import { saveFormData } from "../formDataVersions";
-import { getFormSchema } from "../formDefinitions";
 
 /**
  * Retrieves all workflow instances ordered by creation date in descending order.
@@ -70,9 +73,13 @@ const createWorkflowInstance = async (workflowDefId: number) => {
 	}
 
 	// Extract initial state from the machine config
-	const machineConfig = workflowDef[0].machineConfig as any;
+	const machineConfig = workflowDef[0].machineConfig as {
+		initial?: string;
+		states: Record<string, any>;
+	};
+
 	const initialState =
-		machineConfig.initial || Object.keys(machineConfig.states)[0];
+		machineConfig.initial ?? Object.keys(machineConfig.states)[0];
 
 	const result = await dbClient
 		.insert(workflowInstances)
@@ -93,11 +100,16 @@ const sendWorkflowEvent = async (
 	formData: Record<string, string>,
 ) => {
 	// Save the form data to the db first so we persist data even if not all of the required data is provided
-	await saveFormData(instanceId, formDefId, formData);
+	await DB.formDataVersion.mutations.saveFormData(
+		instanceId,
+		formDefId,
+		formData,
+	);
 
 	// get the workflow instance
 	const workflowInstance = await getWorkflowInstanceById(instanceId);
-	const formSchema = await getFormSchema(formDefId);
+	const formSchema =
+		await DB.formDefinition.queries.getFormSchemaById(formDefId);
 
 	// validate the form data against the form schema and throw an error if any of the required fields are not provided
 	const validatedData = ConvertToZodSchemaAndValidate(formSchema, formData);
@@ -126,13 +138,13 @@ const sendWorkflowEvent = async (
 
 	// get the current state
 	const persistedSnapshot = restoredActor.getPersistedSnapshot();
-	const updatedState = (persistedSnapshot as any).value;
+	const updatedState = (persistedSnapshot as any).value as string;
 
 	if (workflowInstance.currentState === updatedState) {
 		throw new Error("The workflow did not progress forward");
 	}
 
-	// persit the updated state to the db
+	// persist the updated state to the db
 	const result = await dbClient
 		.update(workflowInstances)
 		.set({
@@ -150,6 +162,7 @@ export const workflowInstance = {
 	queries: {
 		getWorkflowInstanceById,
 		getWorkflowInstances,
+		workflowInstancesSelectSchema,
 	},
 	mutations: {
 		createWorkflowInstance,

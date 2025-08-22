@@ -1,5 +1,5 @@
 import type { FormValidateOrFn } from "@tanstack/react-form";
-import * as z from "zod/v4";
+import * as z from "zod";
 
 // Basic field types we support
 export const FormFieldType = z.enum(["text", "textarea"]);
