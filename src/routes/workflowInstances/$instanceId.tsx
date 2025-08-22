@@ -4,7 +4,7 @@ import {
 	useNavigate,
 	useSearch,
 } from "@tanstack/react-router";
-import * as z from "zod/v4";
+import * as z from "zod";
 import { DynamicForm } from "@/components/DynamicForm";
 import { StateSelector } from "@/components/StateSelector";
 import { API } from "@/data/API";

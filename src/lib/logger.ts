@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import pino from "pino";
-import * as z from "zod/v4";
+import * as z from "zod";
 import { env } from "@/env";
 
 const isProd = process.env.NODE_ENV === "production";

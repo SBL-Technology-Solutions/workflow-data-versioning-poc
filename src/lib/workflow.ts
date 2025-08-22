@@ -1,10 +1,9 @@
 import { __unsafe_getAllOwnEventDescriptors, createMachine } from "xstate";
-import type { WorkflowInstance } from "@/data/API";
 
 /**
  * Gets the current workflow state information including resolved state and available events
  * @param machineConfig - The XState machine configuration
- * @param workflowInstance - The current workflow instance
+ * @param currentState - The current state of the workflow Instance
  * @returns An array of next events
  */
 export const getNextEvents = (

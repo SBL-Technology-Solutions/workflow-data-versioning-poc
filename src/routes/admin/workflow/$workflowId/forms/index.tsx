@@ -4,7 +4,7 @@ import {
 	useNavigate,
 	useSearch,
 } from "@tanstack/react-router";
-import * as z from "zod/v4";
+import * as z from "zod";
 import { FormBuilder } from "@/components/FormBuilder";
 import { StateSelector } from "@/components/StateSelector";
 import { API } from "@/data/API";
@@ -72,7 +72,7 @@ function RouteComponent() {
 				}
 				workflowId={Number(workflowId)}
 				state={effectiveState}
-				key={workflowDefinitionAndFormDefinition.formDefId}
+				key={`${workflowId}-${effectiveState}-${workflowDefinitionAndFormDefinition.formDefId ?? "new"}`}
 			/>
 		</div>
 	);

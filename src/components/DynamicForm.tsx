@@ -55,11 +55,15 @@ export const DynamicForm = ({
 				},
 			}),
 		onSuccess: (result) => {
-			queryClient.invalidateQueries({
-				queryKey: ["workflowInstance", workflowInstanceId],
-			});
 			toast.success("Event sent successfully");
-			// update path to next state
+			queryClient.invalidateQueries({
+				queryKey: API.formDataVersion.queryKeys.detail(workflowInstanceId, {
+					state: result.currentState,
+				}),
+			});
+			queryClient.invalidateQueries({
+				queryKey: API.workflowInstance.queryKeys.lists(),
+			});
 			navigate({
 				to: "/workflowInstances/$instanceId",
 				params: {
@@ -83,6 +87,11 @@ export const DynamicForm = ({
 			}),
 		onSuccess: () => {
 			toast.success("Form saved successfully");
+			queryClient.invalidateQueries({
+				queryKey: API.formDataVersion.queryKeys.detail(workflowInstanceId, {
+					state,
+				}),
+			});
 		},
 		//TODO: improve rendering of zod errors in toast as its losing the formatting by the time it gets here
 		onError: (error) => {

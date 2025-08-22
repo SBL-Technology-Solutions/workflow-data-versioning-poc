@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import * as z from "zod/v4";
+import * as z from "zod";
 import { DB } from "../DB";
 
 const workflowDefinitionQueryKeys = {

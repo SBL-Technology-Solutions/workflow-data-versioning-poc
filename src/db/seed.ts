@@ -104,7 +104,6 @@ export const seedData = async () => {
 
 	// 4) Insert the second form definition manually with correct schema
 	await dbClient.insert(schema.formDefinitions).values({
-		id: 2,
 		state: "form2",
 		schema: formDefinition2,
 		workflowDefId: 1, // Reference to the workflow definition we just created

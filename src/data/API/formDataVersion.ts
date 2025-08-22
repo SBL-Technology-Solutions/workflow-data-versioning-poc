@@ -1,6 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
-import * as z from "zod/v4";
+import * as z from "zod";
 import { DB } from "../DB";
 
 const formDataVersionQueryKeys = {
@@ -24,10 +24,11 @@ const getFormDataVersions = createServerFn({
 	return DB.formDataVersion.queries.getFormDataVersions();
 });
 
-const getFormDataVersionsQueryOptions = () => ({
-	queryKey: formDataVersionQueryKeys.list(),
-	queryFn: () => getFormDataVersions(),
-});
+const getFormDataVersionsQueryOptions = () =>
+	queryOptions({
+		queryKey: formDataVersionQueryKeys.list(),
+		queryFn: () => getFormDataVersions(),
+	});
 
 const getCurrentFormDataForWorkflowInstanceServerFn = createServerFn({
 	method: "GET",

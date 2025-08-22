@@ -1,7 +1,7 @@
 import { setResponseStatus } from "@tanstack/react-start/server";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { Operation } from "fast-json-patch";
-import * as z from "zod/v4";
+import * as z from "zod";
 import { dbClient } from "@/db/client";
 import {
 	formDataVersions,
@@ -77,7 +77,7 @@ const getCurrentFormDataForWorkflowInstance = async (
 	if (!result) {
 		setResponseStatus(404);
 		throw new Error(
-			`No Workflow Instance found for workfow instance: ${workflowInstanceId}`,
+			`No Workflow Instance found for workflow instance: ${workflowInstanceId}`,
 		);
 	}
 
@@ -156,6 +156,7 @@ const saveFormData = async (
 	);
 
 	if (!validatedPartialData.success) {
+		setResponseStatus(400);
 		throw new Error(formatZodErrors(validatedPartialData));
 	}
 

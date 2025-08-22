@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import * as z from "zod/v4";
+import * as z from "zod";
 import { FormSchema as zodFormSchema } from "@/lib/form";
 import { DB } from "../DB";
 
