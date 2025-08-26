@@ -1,7 +1,7 @@
 import { setResponseStatus } from "@tanstack/react-start/server";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { Operation } from "fast-json-patch";
-import * as z from "zod";
+import type * as z from "zod";
 import { dbClient } from "@/db/client";
 import {
 	formDataVersions,
@@ -71,7 +71,9 @@ const getCurrentFormDataForWorkflowInstance = async (
 			),
 		)
 		.where(eq(workflowInstances.id, workflowInstanceId))
-		.orderBy(desc(formDataVersions.version))
+		// Prefer the latest saved data version; if none exists yet for this
+		// instance/state, fall back to the latest form definition version
+		.orderBy(desc(formDataVersions.version), desc(formDefinitions.version))
 		.limit(1);
 
 	if (!result) {
