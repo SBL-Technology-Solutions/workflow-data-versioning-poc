@@ -74,10 +74,8 @@ const getCurrentFormDataForWorkflowInstance = async (
 		.where(eq(workflowInstances.id, workflowInstanceId))
 		// Prefer the latest saved data version; if none exists yet for this
 		// instance/state, fall back to the latest form definition version
-		// Sort so that rows with non-null formDataVersions.createdAt come first, then by createdAt desc, then by formDefinitions.version desc
 		.orderBy(
-			sql`CASE WHEN ${formDataVersions.createdAt} IS NULL THEN 1 ELSE 0 END ASC`,
-			desc(formDataVersions.createdAt),
+			sql`${formDataVersions.createdAt} DESC NULLS LAST`,
 			desc(formDefinitions.version),
 		)
 		.limit(1);
