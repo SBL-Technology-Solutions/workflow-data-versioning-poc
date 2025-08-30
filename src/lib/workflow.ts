@@ -20,3 +20,36 @@ export const getNextEvents = (
 
 	return nextEvents;
 };
+
+/**
+ * Extracts all non-final leaf state paths from an XState machine configuration.
+ * Paths are dot-delimited for nested states (e.g., "review.market.pending").
+ *
+ * @param machineConfig - The XState machine configuration
+ * @returns An array of state paths requiring forms
+ */
+export const getWorkflowStates = (
+	machineConfig: Record<string, any>,
+): string[] => {
+	const states: string[] = [];
+	const queue: { node: any; path: string[] }[] = [
+		{ node: machineConfig, path: [] },
+	];
+
+	while (queue.length) {
+		const { node, path } = queue.shift()!;
+
+		if (!node?.states) {
+			if (node?.type !== "final" && path.length) {
+				states.push(path.join("."));
+			}
+			continue;
+		}
+
+		for (const [key, value] of Object.entries(node.states)) {
+			queue.push({ node: value, path: [...path, key] });
+		}
+	}
+
+	return states;
+};
