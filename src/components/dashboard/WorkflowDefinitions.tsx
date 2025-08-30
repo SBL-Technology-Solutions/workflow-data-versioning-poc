@@ -9,11 +9,17 @@ export function WorkflowDefinitions() {
 
 	return (
 		<section className="mb-8">
-			<h2 className="text-xl font-semibold mb-4">
-				Recent Workflow Definitions
-			</h2>
+			<div className="mb-4 flex items-center justify-between">
+				<h2 className="text-xl font-semibold">Recent Workflow Definitions</h2>
+				<Link
+					to="/admin/workflow/new"
+					className="text-blue-500 hover:underline"
+				>
+					New Workflow
+				</Link>
+			</div>
 			{workflowDefinitionsQuery.data.map((wf) => (
-				<div key={wf.id} className="mb-4 p-4 border rounded">
+				<div key={wf.id} className="mb-4 rounded border p-4">
 					<div>
 						ID:{" "}
 						<Link
@@ -29,7 +35,7 @@ export function WorkflowDefinitions() {
 					<div>Version: {wf.version}</div>
 					<div>
 						Machine Config:{" "}
-						<pre className="text-sm bg-secondary text-secondary-foreground p-2 mt-2 rounded">
+						<pre className="mt-2 rounded bg-secondary p-2 text-sm text-secondary-foreground">
 							{JSON.stringify(wf.machineConfig, null, 2)}
 						</pre>
 					</div>
