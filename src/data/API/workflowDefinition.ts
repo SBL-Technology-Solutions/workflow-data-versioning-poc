@@ -1,6 +1,7 @@
 import { queryOptions } from "@tanstack/react-query";
 import { createServerFn } from "@tanstack/react-start";
 import * as z from "zod";
+import { FormSchema as zodFormSchema } from "@/lib/form";
 import { DB } from "../DB";
 
 const workflowDefinitionQueryKeys = {
@@ -37,10 +38,38 @@ export const getWorkflowDefinitionbyIdQueryOptions = (id: number) =>
 		queryFn: () => getWorkflowDefinitionbyIdFn({ data: { id } }),
 	});
 
+const createWorkflowDefinitionServerFn = createServerFn({
+	method: "POST",
+})
+	.validator(
+		z.object({
+			name: z.string(),
+			machineConfig: z.record(z.any()),
+			forms: z
+				.record(
+					z.object({
+						formDefId: z.number().optional(),
+						schema: zodFormSchema.optional(),
+					}),
+				)
+				.optional(),
+		}),
+	)
+	.handler(async ({ data: { name, machineConfig, forms } }) =>
+		DB.workflowDefinition.mutations.createWorkflowDefinition(
+			name,
+			machineConfig,
+			forms,
+		),
+	);
+
 export const workflowDefinition = {
 	queries: {
 		getWorkflowDefinitionsQueryOptions,
 		getWorkflowDefinitionbyIdQueryOptions,
+	},
+	mutations: {
+		createWorkflowDefinitionServerFn,
 	},
 	queryKeys: workflowDefinitionQueryKeys,
 } as const;
