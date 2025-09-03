@@ -1,5 +1,13 @@
 import { and, eq } from "drizzle-orm";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 import {
 	formDataVersions,
 	formDefinitions,
@@ -7,12 +15,16 @@ import {
 	workflowInstances,
 } from "@/db/schema";
 import type { FormSchema } from "@/lib/form";
-import { cleanupTestDb, setupTestDb, truncateAllTables, type TestDbContext } from "./testDb";
+import {
+	cleanupTestDb,
+	setupTestDb,
+	type TestDbContext,
+	truncateAllTables,
+} from "./testDb";
 
 // Mock server-only helper to avoid HTTPEvent errors in tests
-vi.mock("@tanstack/react-start/server", () => ({
-	setResponseStatus: (_code: number) => {},
-}));
+const setResponseStatus = vi.fn();
+vi.mock("@tanstack/react-start/server", () => ({ setResponseStatus }));
 
 describe("DB.formDefinition", () => {
 	let ctx: TestDbContext;
@@ -85,12 +97,14 @@ describe("DB.formDefinition", () => {
 		expect(new Date(defs[0].createdAt).toISOString()).toBe(
 			new Date("2025-01-02T00:00:00.000Z").toISOString(),
 		);
+		expect(defs.map((d) => d.version)).toEqual([2, 1]);
 	});
 
 	it("getCurrentFormForWorkflowDefId: throws when workflow definition missing", async () => {
 		await expect(
 			DB.formDefinition.queries.getCurrentFormForWorkflowDefId(9999, "form1"),
 		).rejects.toThrow(/No Workflow Definition found/);
+		expect(setResponseStatus).toHaveBeenCalledWith(404);
 	});
 
 	it("getCurrentFormForWorkflowDefId: throws Invalid States when no states present", async () => {
@@ -103,6 +117,7 @@ describe("DB.formDefinition", () => {
 		await expect(
 			DB.formDefinition.queries.getCurrentFormForWorkflowDefId(workflowDefId),
 		).rejects.toThrow(/Invalid States/);
+		expect(setResponseStatus).toHaveBeenCalledWith(404);
 	});
 
 	it("getCurrentFormForWorkflowDefId: throws Invalid State when state has no form definition", async () => {
@@ -117,6 +132,7 @@ describe("DB.formDefinition", () => {
 				"form1",
 			),
 		).rejects.toThrow(/Invalid State: form1/);
+		expect(setResponseStatus).toHaveBeenCalledWith(404);
 	});
 
 	it("getCurrentFormForWorkflowDefId: returns latest formDef for state; defaults to first state when omitted", async () => {
@@ -127,23 +143,35 @@ describe("DB.formDefinition", () => {
 
 		const [{ id: v1 }] = await db
 			.insert(formDefinitions)
-			.values({ workflowDefId, state: "form1", version: 1, schema: formSchemaV1 })
+			.values({
+				workflowDefId,
+				state: "form1",
+				version: 1,
+				schema: formSchemaV1,
+			})
 			.returning();
 		const [{ id: v2 }] = await db
 			.insert(formDefinitions)
-			.values({ workflowDefId, state: "form1", version: 2, schema: formSchemaV2 })
+			.values({
+				workflowDefId,
+				state: "form1",
+				version: 2,
+				schema: formSchemaV2,
+			})
 			.returning();
 
-		const explicit = await DB.formDefinition.queries.getCurrentFormForWorkflowDefId(
-			workflowDefId,
-			"form1",
-		);
+		const explicit =
+			await DB.formDefinition.queries.getCurrentFormForWorkflowDefId(
+				workflowDefId,
+				"form1",
+			);
 		expect(explicit?.formDefId).toBe(v2);
 		expect(explicit?.version).toBe(2);
 
-		const implicit = await DB.formDefinition.queries.getCurrentFormForWorkflowDefId(
-			workflowDefId,
-		);
+		const implicit =
+			await DB.formDefinition.queries.getCurrentFormForWorkflowDefId(
+				workflowDefId,
+			);
 		expect(implicit?.formDefId).toBe(v2);
 		expect(implicit?.state).toBe("form1");
 	});
@@ -156,11 +184,21 @@ describe("DB.formDefinition", () => {
 
 		const [{ id: formDefV1 }] = await db
 			.insert(formDefinitions)
-			.values({ workflowDefId, state: "form1", version: 1, schema: formSchemaV1 })
+			.values({
+				workflowDefId,
+				state: "form1",
+				version: 1,
+				schema: formSchemaV1,
+			})
 			.returning();
 		const [{ id: formDefV2 }] = await db
 			.insert(formDefinitions)
-			.values({ workflowDefId, state: "form1", version: 2, schema: formSchemaV2 })
+			.values({
+				workflowDefId,
+				state: "form1",
+				version: 2,
+				schema: formSchemaV2,
+			})
 			.returning();
 
 		const [{ id: instanceId }] = await db
@@ -196,6 +234,52 @@ describe("DB.formDefinition", () => {
 		await expect(
 			DB.formDefinition.queries.getCurrentFormForInstance(9999, "form1"),
 		).rejects.toThrow(/Workflow instance not found/);
+		expect(setResponseStatus).toHaveBeenCalledWith(404);
+	});
+
+	it("getCurrentFormForInstance: picks highest data version for same formDef", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+		const [{ id: formDefV1 }] = await db
+			.insert(formDefinitions)
+			.values({
+				workflowDefId,
+				state: "form1",
+				version: 1,
+				schema: formSchemaV1,
+			})
+			.returning();
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "form1", status: "active" })
+			.returning();
+
+		await db.insert(formDataVersions).values([
+			{
+				workflowInstanceId: instanceId,
+				formDefId: formDefV1,
+				version: 1,
+				data: { firstName: "A" },
+				patch: [],
+				createdBy: "test",
+			},
+			{
+				workflowInstanceId: instanceId,
+				formDefId: formDefV1,
+				version: 2,
+				data: { firstName: "B" },
+				patch: [],
+				createdBy: "test",
+			},
+		]);
+
+		const got = await DB.formDefinition.queries.getCurrentFormForInstance(
+			instanceId,
+			"form1",
+		);
+		expect(got?.formDefId).toBe(formDefV1);
 	});
 
 	it("getFormSchemaById: returns schema; throws for missing id", async () => {
@@ -206,7 +290,12 @@ describe("DB.formDefinition", () => {
 
 		const [{ id: formDefId }] = await db
 			.insert(formDefinitions)
-			.values({ workflowDefId, state: "form1", version: 1, schema: formSchemaV1 })
+			.values({
+				workflowDefId,
+				state: "form1",
+				version: 1,
+				schema: formSchemaV1,
+			})
 			.returning();
 
 		const s = await DB.formDefinition.queries.getFormSchemaById(formDefId);
@@ -215,6 +304,7 @@ describe("DB.formDefinition", () => {
 		await expect(
 			DB.formDefinition.queries.getFormSchemaById(123456),
 		).rejects.toThrow(/Form definition with id 123456 not found/);
+		expect(setResponseStatus).toHaveBeenCalledWith(404);
 	});
 
 	it("createFormVersion: increments version and migrates compatible data", async () => {
@@ -226,7 +316,12 @@ describe("DB.formDefinition", () => {
 		// Seed v1 and instance with data
 		const [{ id: v1 }] = await db
 			.insert(formDefinitions)
-			.values({ workflowDefId, state: "form1", version: 1, schema: formSchemaV1 })
+			.values({
+				workflowDefId,
+				state: "form1",
+				version: 1,
+				schema: formSchemaV1,
+			})
 			.returning();
 		const [{ id: instanceId }] = await db
 			.insert(workflowInstances)
@@ -287,7 +382,12 @@ describe("DB.formDefinition", () => {
 		// Seed v1 with firstName
 		const [{ id: v1 }] = await db
 			.insert(formDefinitions)
-			.values({ workflowDefId, state: "form1", version: 1, schema: formSchemaV1 })
+			.values({
+				workflowDefId,
+				state: "form1",
+				version: 1,
+				schema: formSchemaV1,
+			})
 			.returning();
 		const [{ id: instanceId }] = await db
 			.insert(workflowInstances)
