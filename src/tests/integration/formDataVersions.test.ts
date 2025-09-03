@@ -6,7 +6,15 @@ import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import { Pool } from "pg";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import {
+	afterAll,
+	beforeAll,
+	beforeEach,
+	describe,
+	expect,
+	it,
+	vi,
+} from "vitest";
 import {
 	formDataVersions,
 	formDefinitions,
@@ -15,12 +23,18 @@ import {
 } from "@/db/schema";
 import type { FormSchema } from "@/lib/form";
 
+// Mock server-only helper to avoid HTTPEvent errors in tests
+vi.mock("@tanstack/react-start/server", () => ({
+	setResponseStatus: (_code: number) => {},
+}));
+
 describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 	const PG_IMAGE = "postgres:17.5";
 
 	let container: StartedPostgreSqlContainer;
 	let pool: Pool;
 	let db: ReturnType<typeof drizzle>;
+	let DB: typeof import("@/data/DB")["DB"];
 
 	const machineConfig = {
 		initial: "form1",
@@ -66,6 +80,7 @@ describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 
 		// Run migrations for this fresh DB
 		await migrate(db, { migrationsFolder: "./drizzle/migrations" });
+		({ DB } = await import("@/data/DB"));
 	});
 
 	afterAll(async () => {
@@ -113,8 +128,6 @@ describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 			.insert(workflowInstances)
 			.values({ workflowDefId, currentState: "form1", status: "active" })
 			.returning();
-
-		const { DB } = await import("@/data/DB");
 
 		const result =
 			await DB.formDataVersion.queries.getCurrentFormDataForWorkflowInstance(
@@ -170,7 +183,6 @@ describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 			})
 			.returning();
 
-		const { DB } = await import("@/data/DB");
 		const result =
 			await DB.formDataVersion.queries.getCurrentFormDataForWorkflowInstance(
 				instanceId,
@@ -244,7 +256,6 @@ describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 			createdAt: new Date("2025-01-03T00:00:00.000Z"),
 		});
 
-		const { DB } = await import("@/data/DB");
 		const result =
 			await DB.formDataVersion.queries.getCurrentFormDataForWorkflowInstance(
 				instanceId,
@@ -254,5 +265,233 @@ describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 		// Expect the most recently saved data row to win, regardless of per-formDef revision number
 		expect(result?.formDefinitionId).toBe(formDefV2Id);
 		expect(result?.data).toEqual({ firstName: "New-1" });
+	});
+
+	it("uses current workflow instance state when state param is omitted", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+
+		const [{ id: _v1 }] = await db
+			.insert(formDefinitions)
+			.values({
+				workflowDefId,
+				state: "draft",
+				version: 1,
+				schema: formSchemaV1,
+			})
+			.returning();
+		const [{ id: v2 }] = await db
+			.insert(formDefinitions)
+			.values({
+				workflowDefId,
+				state: "review",
+				version: 2,
+				schema: formSchemaV2,
+			})
+			.returning();
+
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "review", status: "active" })
+			.returning();
+
+		const result =
+			await DB.formDataVersion.queries.getCurrentFormDataForWorkflowInstance(
+				instanceId,
+			);
+
+		expect(result?.formDefinitionId).toBe(v2);
+	});
+
+	it("throws when provided state is invalid for this workflow", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+
+		// Only create form for form1; provided state will be invalid
+		await db
+			.insert(formDefinitions)
+			.values({
+				workflowDefId,
+				state: "draft",
+				version: 1,
+				schema: formSchemaV1,
+			})
+			.returning();
+
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "draft", status: "active" })
+			.returning();
+
+		await expect(
+			DB.formDataVersion.queries.getCurrentFormDataForWorkflowInstance(
+				instanceId,
+				"bad",
+			),
+		).rejects.toThrow(/No schema found for this state bad/);
+	});
+
+	it("throws when workflow instance does not exist", async () => {
+		await expect(
+			DB.formDataVersion.queries.getCurrentFormDataForWorkflowInstance(
+				9999,
+				"form1",
+			),
+		).rejects.toThrow(/No Workflow Instance found/);
+	});
+
+	it("getFormDataVersions: returns empty then sorts by createdAt desc", async () => {
+		const empty = await DB.formDataVersion.queries.getFormDataVersions();
+		expect(empty).toEqual([]);
+
+		// Seed minimal WF + defs + instance
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+		const [{ id: formDefId }] = await db
+			.insert(formDefinitions)
+			.values({
+				workflowDefId,
+				state: "draft",
+				version: 1,
+				schema: formSchemaV1,
+			})
+			.returning();
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "draft", status: "active" })
+			.returning();
+
+		await db.insert(formDataVersions).values({
+			workflowInstanceId: instanceId,
+			formDefId,
+			version: 1,
+			data: { firstName: "A" },
+			patch: [],
+			createdBy: "test",
+			createdAt: new Date("2025-01-01T00:00:00.000Z"),
+		});
+		await db.insert(formDataVersions).values({
+			workflowInstanceId: instanceId,
+			formDefId,
+			version: 2,
+			data: { firstName: "B" },
+			patch: [],
+			createdBy: "test",
+			createdAt: new Date("2025-01-02T00:00:00.000Z"),
+		});
+
+		const rows = await DB.formDataVersion.queries.getFormDataVersions();
+		expect(rows).toHaveLength(2);
+		expect(new Date(rows[0].createdAt).toISOString()).toBe(
+			new Date("2025-01-02T00:00:00.000Z").toISOString(),
+		);
+	});
+
+	it("saveFormData: v1 empty patch, v2 has patch; per-formDef versioning", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+		const [{ id: formDefId1 }] = await db
+			.insert(formDefinitions)
+			.values({
+				workflowDefId,
+				state: "draft",
+				version: 1,
+				schema: formSchemaV1,
+			})
+			.returning();
+		const [{ id: formDefId2 }] = await db
+			.insert(formDefinitions)
+			.values({
+				workflowDefId,
+				state: "draft",
+				version: 2,
+				schema: formSchemaV2,
+			})
+			.returning();
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "draft", status: "active" })
+			.returning();
+
+		const first = await DB.formDataVersion.mutations.saveFormData(
+			instanceId,
+			formDefId1,
+			{ firstName: "Alice" },
+		);
+		expect(first[0].version).toBe(1);
+		expect(first[0].patch).toEqual([]);
+		expect(first[0].data).toEqual({ firstName: "Alice" });
+
+		const second = await DB.formDataVersion.mutations.saveFormData(
+			instanceId,
+			formDefId1,
+			{ firstName: "Bob" },
+		);
+		expect(second[0].version).toBe(2);
+		expect(Array.isArray(second[0].patch)).toBe(true);
+		expect(second[0].patch.length).toBeGreaterThan(0);
+		expect(second[0].data).toEqual({ firstName: "Bob" });
+
+		const third = await DB.formDataVersion.mutations.saveFormData(
+			instanceId,
+			formDefId2,
+			{ firstName: "Carol" },
+		);
+		expect(third[0].version).toBe(1);
+		expect(third[0].data).toEqual({ firstName: "Carol" });
+	});
+
+	it("saveFormData: schema validation enforces pattern even in partial mode", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+		const emailSchema: FormSchema = {
+			title: "Email",
+			fields: [
+				{
+					name: "email",
+					type: "text",
+					label: "Email",
+					required: true,
+					pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$",
+				},
+			],
+		};
+		const [{ id: formDefId }] = await db
+			.insert(formDefinitions)
+			.values({
+				workflowDefId,
+				state: "draft",
+				version: 1,
+				schema: emailSchema,
+			})
+			.returning();
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "draft", status: "active" })
+			.returning();
+
+		await expect(
+			DB.formDataVersion.mutations.saveFormData(instanceId, formDefId, {
+				email: "not-an-email",
+			}),
+		).rejects.toThrow(/has invalid format/);
+
+		const ok = await DB.formDataVersion.mutations.saveFormData(
+			instanceId,
+			formDefId,
+			{ email: "a@b.com" },
+		);
+		expect(ok[0].version).toBe(1);
+		expect(ok[0].data).toEqual({ email: "a@b.com" });
 	});
 });
