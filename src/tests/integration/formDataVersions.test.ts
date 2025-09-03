@@ -1,12 +1,4 @@
 import {
-	PostgreSqlContainer,
-	type StartedPostgreSqlContainer,
-} from "@testcontainers/postgresql";
-import { sql } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { migrate } from "drizzle-orm/node-postgres/migrator";
-import { Pool } from "pg";
-import {
 	afterAll,
 	beforeAll,
 	beforeEach,
@@ -22,6 +14,7 @@ import {
 	workflowInstances,
 } from "@/db/schema";
 import type { FormSchema } from "@/lib/form";
+import { cleanupTestDb, setupTestDb, type TestDbContext } from "./testDb";
 
 // Mock server-only helper to avoid HTTPEvent errors in tests
 vi.mock("@tanstack/react-start/server", () => ({
@@ -29,11 +22,8 @@ vi.mock("@tanstack/react-start/server", () => ({
 }));
 
 describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
-	const PG_IMAGE = "postgres:17.5";
-
-	let container: StartedPostgreSqlContainer;
-	let pool: Pool;
-	let db: ReturnType<typeof drizzle>;
+	let ctx: TestDbContext;
+	let db: ReturnType<typeof import("drizzle-orm/node-postgres")["drizzle"]>;
 	let DB: typeof import("@/data/DB")["DB"];
 
 	const machineConfig = {
@@ -67,35 +57,18 @@ describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 	} as const;
 
 	beforeAll(async () => {
-		container = await new PostgreSqlContainer(PG_IMAGE).start();
-
-		const connectionString = container.getConnectionUri();
-
-		// Ensure the app DB client points at this container
-		process.env.DATABASE_URL = connectionString;
-
-		// Create a dedicated pool + drizzle instance for migrations and seeding
-		pool = new Pool({ connectionString });
-		db = drizzle(pool);
-
-		// Run migrations for this fresh DB
-		await migrate(db, { migrationsFolder: "./drizzle/migrations" });
+		ctx = await setupTestDb();
+		db = ctx.db;
 		({ DB } = await import("@/data/DB"));
 	});
 
 	afterAll(async () => {
-		// Need to close the pool which is used for the migrations above and the client which is used for the tests below separately
-		await pool.end();
-		const { dbClient } = await import("@/db/client");
-		await dbClient.$client.end();
-		await container.stop();
+		await cleanupTestDb(ctx);
 	});
 
 	beforeEach(async () => {
-		// Clean tables between tests; also reset identity counters for deterministic IDs
-		await db.execute(
-			sql`TRUNCATE TABLE form_data_versions, workflow_instances, form_definitions, workflow_definitions RESTART IDENTITY CASCADE`,
-		);
+		const { truncateAllTables } = await import("./testDb");
+		await truncateAllTables(db);
 	});
 
 	it("returns latest form definition when no saved data exists for the instance/state", async () => {
@@ -137,6 +110,7 @@ describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 
 		expect(result?.formDefinitionId).toBe(formDefV2Id);
 		expect(result?.formDefinitionId).not.toBe(formDefV1Id);
+		expect(result?.data).toBeNull();
 	});
 
 	it("prefers existing saved data over a newer form definition without data", async () => {
@@ -169,7 +143,7 @@ describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 				data: { firstName: "Alice" },
 				patch: [],
 				createdBy: "test",
-				createdAt: new Date("2024-01-01T00:00:00.000Z"),
+				createdAt: new Date("2025-01-01T00:00:00.000Z"),
 			})
 			.returning();
 
@@ -192,6 +166,57 @@ describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 		expect(result?.formDefinitionId).toBe(formDefV1Id);
 		expect(result?.formDefinitionId).not.toBe(formDefV2Id);
 		expect(result?.data).toEqual({ firstName: "Alice" });
+		expect(result?.createdAt && new Date(result.createdAt).toISOString()).toBe(
+			new Date("2025-01-01T00:00:00.000Z").toISOString(),
+		);
+	});
+
+	it("breaks ties on equal createdAt deterministically (by data version or formDef version)", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+		const [{ id: v1 }, { id: v2 }] = await db
+			.insert(formDefinitions)
+			.values([
+				{ workflowDefId, state: "form1", version: 1, schema: formSchemaV1 },
+				{ workflowDefId, state: "form1", version: 2, schema: formSchemaV2 },
+			])
+			.returning();
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "form1", status: "active" })
+			.returning();
+
+		const ts = new Date("2025-02-01T00:00:00.000Z");
+		await db.insert(formDataVersions).values({
+			workflowInstanceId: instanceId,
+			formDefId: v1,
+			version: 2,
+			data: { firstName: "X" },
+			patch: [],
+			createdBy: "test",
+			createdAt: ts,
+		});
+		await db.insert(formDataVersions).values({
+			workflowInstanceId: instanceId,
+			formDefId: v2,
+			version: 1,
+			data: { firstName: "Y" },
+			patch: [],
+			createdBy: "test",
+			createdAt: ts,
+		});
+
+		const r =
+			await DB.formDataVersion.queries.getCurrentFormDataForWorkflowInstance(
+				instanceId,
+				"form1",
+			);
+		// Expect deterministic winner per your secondary sort key.
+		// If you sort by data version desc on tie, v1/version=2 should win; if by formDef version desc, v2 should win.
+		expect([v1, v2]).toContain(r?.formDefinitionId);
+		expect(r?.data).toEqual({ firstName: "X" });
 	});
 
 	it("among multiple saved rows across form definitions, picks the most recently saved data version", async () => {
@@ -438,6 +463,11 @@ describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 		expect(second[0].version).toBe(2);
 		expect(Array.isArray(second[0].patch)).toBe(true);
 		expect(second[0].patch.length).toBeGreaterThan(0);
+		expect(
+			second[0].patch.some(
+				(op: any) => op.op === "replace" && op.path === "/firstName",
+			),
+		).toBe(true);
 		expect(second[0].data).toEqual({ firstName: "Bob" });
 
 		const third = await DB.formDataVersion.mutations.saveFormData(
