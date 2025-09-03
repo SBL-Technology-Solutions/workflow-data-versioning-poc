@@ -1,0 +1,333 @@
+import { and, eq } from "drizzle-orm";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	formDataVersions,
+	formDefinitions,
+	workflowDefinitions,
+	workflowInstances,
+} from "@/db/schema";
+import type { FormSchema } from "@/lib/form";
+import { cleanupTestDb, setupTestDb, truncateAllTables, type TestDbContext } from "./testDb";
+
+// Mock server-only helper to avoid HTTPEvent errors in tests
+vi.mock("@tanstack/react-start/server", () => ({
+	setResponseStatus: (_code: number) => {},
+}));
+
+describe("DB.formDefinition", () => {
+	let ctx: TestDbContext;
+	let db: ReturnType<typeof import("drizzle-orm/node-postgres")["drizzle"]>;
+	let DB: typeof import("@/data/DB")["DB"];
+
+	const machineConfig = {
+		initial: "form1",
+		states: {
+			form1: { on: { NEXT: "form2" } },
+			form2: { type: "final" },
+		},
+	} as const;
+
+	const formSchemaV1: FormSchema = {
+		title: "Form V1",
+		fields: [
+			{ name: "firstName", type: "text", label: "First Name", required: true },
+		],
+	};
+
+	const formSchemaV2: FormSchema = {
+		title: "Form V2",
+		fields: [
+			{ name: "firstName", type: "text", label: "First Name", required: true },
+			{ name: "lastName", type: "text", label: "Last Name", required: false },
+		],
+	};
+
+	beforeAll(async () => {
+		ctx = await setupTestDb();
+		db = ctx.db;
+		({ DB } = await import("@/data/DB"));
+	});
+
+	afterAll(async () => {
+		await cleanupTestDb(ctx);
+	});
+
+	beforeEach(async () => {
+		await truncateAllTables(db);
+	});
+
+	it("getFormDefinitions: returns empty then sorts by createdAt desc", async () => {
+		const empty = await DB.formDefinition.queries.getFormDefinitions();
+		expect(empty).toEqual([]);
+
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+
+		await db.insert(formDefinitions).values({
+			workflowDefId,
+			state: "form1",
+			version: 1,
+			schema: formSchemaV1,
+			createdAt: new Date("2025-01-01T00:00:00.000Z"),
+		});
+		await db.insert(formDefinitions).values({
+			workflowDefId,
+			state: "form1",
+			version: 2,
+			schema: formSchemaV2,
+			createdAt: new Date("2025-01-02T00:00:00.000Z"),
+		});
+
+		const defs = await DB.formDefinition.queries.getFormDefinitions();
+		expect(defs).toHaveLength(2);
+		expect(new Date(defs[0].createdAt).toISOString()).toBe(
+			new Date("2025-01-02T00:00:00.000Z").toISOString(),
+		);
+	});
+
+	it("getCurrentFormForWorkflowDefId: throws when workflow definition missing", async () => {
+		await expect(
+			DB.formDefinition.queries.getCurrentFormForWorkflowDefId(9999, "form1"),
+		).rejects.toThrow(/No Workflow Definition found/);
+	});
+
+	it("getCurrentFormForWorkflowDefId: throws Invalid States when no states present", async () => {
+		// states is empty
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig: { states: {} } })
+			.returning();
+
+		await expect(
+			DB.formDefinition.queries.getCurrentFormForWorkflowDefId(workflowDefId),
+		).rejects.toThrow(/Invalid States/);
+	});
+
+	it("getCurrentFormForWorkflowDefId: throws Invalid State when state has no form definition", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+
+		await expect(
+			DB.formDefinition.queries.getCurrentFormForWorkflowDefId(
+				workflowDefId,
+				"form1",
+			),
+		).rejects.toThrow(/Invalid State: form1/);
+	});
+
+	it("getCurrentFormForWorkflowDefId: returns latest formDef for state; defaults to first state when omitted", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+
+		const [{ id: v1 }] = await db
+			.insert(formDefinitions)
+			.values({ workflowDefId, state: "form1", version: 1, schema: formSchemaV1 })
+			.returning();
+		const [{ id: v2 }] = await db
+			.insert(formDefinitions)
+			.values({ workflowDefId, state: "form1", version: 2, schema: formSchemaV2 })
+			.returning();
+
+		const explicit = await DB.formDefinition.queries.getCurrentFormForWorkflowDefId(
+			workflowDefId,
+			"form1",
+		);
+		expect(explicit?.formDefId).toBe(v2);
+		expect(explicit?.version).toBe(2);
+
+		const implicit = await DB.formDefinition.queries.getCurrentFormForWorkflowDefId(
+			workflowDefId,
+		);
+		expect(implicit?.formDefId).toBe(v2);
+		expect(implicit?.state).toBe("form1");
+	});
+
+	it("getCurrentFormForInstance: returns latest with data; falls back to latest formDef when none", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+
+		const [{ id: formDefV1 }] = await db
+			.insert(formDefinitions)
+			.values({ workflowDefId, state: "form1", version: 1, schema: formSchemaV1 })
+			.returning();
+		const [{ id: formDefV2 }] = await db
+			.insert(formDefinitions)
+			.values({ workflowDefId, state: "form1", version: 2, schema: formSchemaV2 })
+			.returning();
+
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "form1", status: "active" })
+			.returning();
+
+		// No saved data yet: falls back to latest formDef v2
+		const noData = await DB.formDefinition.queries.getCurrentFormForInstance(
+			instanceId,
+			"form1",
+		);
+		expect(noData?.formDefId).toBe(formDefV2);
+
+		// Save data only for v1
+		await db.insert(formDataVersions).values({
+			workflowInstanceId: instanceId,
+			formDefId: formDefV1,
+			version: 1,
+			data: { firstName: "Alice" },
+			patch: [],
+			createdBy: "test",
+		});
+
+		const withData = await DB.formDefinition.queries.getCurrentFormForInstance(
+			instanceId,
+			"form1",
+		);
+		expect(withData?.formDefId).toBe(formDefV1);
+	});
+
+	it("getCurrentFormForInstance: throws when workflow instance does not exist", async () => {
+		await expect(
+			DB.formDefinition.queries.getCurrentFormForInstance(9999, "form1"),
+		).rejects.toThrow(/Workflow instance not found/);
+	});
+
+	it("getFormSchemaById: returns schema; throws for missing id", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+
+		const [{ id: formDefId }] = await db
+			.insert(formDefinitions)
+			.values({ workflowDefId, state: "form1", version: 1, schema: formSchemaV1 })
+			.returning();
+
+		const s = await DB.formDefinition.queries.getFormSchemaById(formDefId);
+		expect(s).toEqual(formSchemaV1);
+
+		await expect(
+			DB.formDefinition.queries.getFormSchemaById(123456),
+		).rejects.toThrow(/Form definition with id 123456 not found/);
+	});
+
+	it("createFormVersion: increments version and migrates compatible data", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+
+		// Seed v1 and instance with data
+		const [{ id: v1 }] = await db
+			.insert(formDefinitions)
+			.values({ workflowDefId, state: "form1", version: 1, schema: formSchemaV1 })
+			.returning();
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "form1", status: "active" })
+			.returning();
+		await db.insert(formDataVersions).values({
+			workflowInstanceId: instanceId,
+			formDefId: v1,
+			version: 1,
+			data: { firstName: "Alice" },
+			patch: [],
+			createdBy: "test",
+		});
+
+		// Create v2 (superset schema) and expect migration row for instance
+		const created = await DB.formDefinition.mutations.createFormVersion(
+			workflowDefId,
+			"form1",
+			formSchemaV2,
+		);
+		expect(created[0].id).toBeDefined();
+
+		// Verify next version is 2
+		const rec = await db
+			.select()
+			.from(formDefinitions)
+			.where(eq(formDefinitions.id, created[0].id))
+			.limit(1);
+		expect(rec[0].version).toBe(2);
+
+		// Verify migration inserted data for new formDef
+		const allForInstance = await db
+			.select()
+			.from(formDataVersions)
+			.where(eq(formDataVersions.workflowInstanceId, instanceId));
+		expect(allForInstance).toHaveLength(2);
+		const migrated = await db
+			.select()
+			.from(formDataVersions)
+			.where(
+				and(
+					eq(formDataVersions.workflowInstanceId, instanceId),
+					eq(formDataVersions.formDefId, created[0].id),
+				),
+			)
+			.limit(1);
+		expect(migrated[0].version).toBe(1);
+		expect(migrated[0].data).toEqual({ firstName: "Alice" });
+		expect(migrated[0].createdBy).toBe("system-migration");
+	});
+
+	it("createFormVersion: does not migrate if new schema is not superset", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+
+		// Seed v1 with firstName
+		const [{ id: v1 }] = await db
+			.insert(formDefinitions)
+			.values({ workflowDefId, state: "form1", version: 1, schema: formSchemaV1 })
+			.returning();
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "form1", status: "active" })
+			.returning();
+		await db.insert(formDataVersions).values({
+			workflowInstanceId: instanceId,
+			formDefId: v1,
+			version: 1,
+			data: { firstName: "X" },
+			patch: [],
+			createdBy: "test",
+		});
+
+		// New schema drops firstName: not a superset
+		const incompatible: FormSchema = {
+			title: "Form V3",
+			fields: [
+				{ name: "lastName", type: "text", label: "Last Name", required: false },
+			],
+		};
+
+		const created = await DB.formDefinition.mutations.createFormVersion(
+			workflowDefId,
+			"form1",
+			incompatible,
+		);
+
+		// Ensure no additional migration rows were added for the new form def
+		const migrated = await db
+			.select()
+			.from(formDataVersions)
+			.where(eq(formDataVersions.workflowInstanceId, instanceId));
+		expect(migrated).toHaveLength(1);
+		// sanity: the new form def exists and version advanced
+		const rec = await db
+			.select()
+			.from(formDefinitions)
+			.where(eq(formDefinitions.id, created[0].id))
+			.limit(1);
+		expect(rec[0].version).toBe(2);
+	});
+});
