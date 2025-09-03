@@ -494,4 +494,111 @@ describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 		expect(ok[0].version).toBe(1);
 		expect(ok[0].data).toEqual({ email: "a@b.com" });
 	});
+
+	it("throws when provided state is past the current state in workflow", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+
+		await db
+			.insert(formDefinitions)
+			.values({
+				workflowDefId,
+				state: "form1",
+				version: 1,
+				schema: formSchemaV1,
+			})
+			.returning();
+		await db
+			.insert(formDefinitions)
+			.values({
+				workflowDefId,
+				state: "form2",
+				version: 1,
+				schema: formSchemaV2,
+			})
+			.returning();
+
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "form1", status: "active" })
+			.returning();
+
+		await expect(
+			DB.formDataVersion.queries.getCurrentFormDataForWorkflowInstance(
+				instanceId,
+				"form2",
+			),
+		).rejects.toThrow(/past the current state/);
+	});
+
+	it("throws when provided state exists in workflow but has no form definition", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+
+		// Only create definition for form1; omit form2 on purpose
+		await db
+			.insert(formDefinitions)
+			.values({
+				workflowDefId,
+				state: "form1",
+				version: 1,
+				schema: formSchemaV1,
+			})
+			.returning();
+
+		// Set instance currentState to form2 so provided state isn't past current
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "form2", status: "active" })
+			.returning();
+
+		await expect(
+			DB.formDataVersion.queries.getCurrentFormDataForWorkflowInstance(
+				instanceId,
+				"form2",
+			),
+		).rejects.toThrow(/No schema found for this state form2/);
+	});
+
+	it("saveFormData: produces a JSON patch showing changes", async () => {
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({ name: "WF", version: 1, machineConfig })
+			.returning();
+		const [{ id: formDefId }] = await db
+			.insert(formDefinitions)
+			.values({
+				workflowDefId,
+				state: "form1",
+				version: 1,
+				schema: formSchemaV2,
+			})
+			.returning();
+		const [{ id: instanceId }] = await db
+			.insert(workflowInstances)
+			.values({ workflowDefId, currentState: "form1", status: "active" })
+			.returning();
+
+		const first = await DB.formDataVersion.mutations.saveFormData(
+			instanceId,
+			formDefId,
+			{ firstName: "Alice", lastName: "A" },
+		);
+		expect(first[0].version).toBe(1);
+		expect(first[0].patch).toEqual([]);
+
+		const second = await DB.formDataVersion.mutations.saveFormData(
+			instanceId,
+			formDefId,
+			{ firstName: "Bob", lastName: "A" },
+		);
+		expect(second[0].version).toBe(2);
+		expect(second[0].patch).toEqual([
+			{ op: "replace", path: "/firstName", value: "Bob" },
+		]);
+	});
 });
