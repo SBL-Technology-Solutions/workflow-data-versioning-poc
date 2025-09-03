@@ -75,10 +75,8 @@ const getCurrentFormDataForWorkflowInstance = async (
 		// Prefer the latest saved data version; if none exists yet for this
 		// instance/state, fall back to the latest form definition version
 		.orderBy(
-			// Preferrows with saved data first
+			// Prefer rows with saved data first
 			sql`${formDataVersions.createdAt} DESC NULLS LAST`,
-			// Newest saved first
-			desc(formDataVersions.createdAt),
 			// Within same timestamp, prefer higher per-formDef revision
 			desc(formDataVersions.version),
 			// Absolute final tiebreaker for stability
