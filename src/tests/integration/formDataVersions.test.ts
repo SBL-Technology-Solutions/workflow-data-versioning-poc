@@ -213,9 +213,8 @@ describe("DB.formDataVersion.getCurrentFormDataForWorkflowInstance", () => {
 				instanceId,
 				"form1",
 			);
-		// Expect deterministic winner per your secondary sort key.
-		// If you sort by data version desc on tie, v1/version=2 should win; if by formDef version desc, v2 should win.
-		expect([v1, v2]).toContain(r?.formDefinitionId);
+		// Tiebreaker: createdAt equal -> prefer higher data version (desc), then formDef version (desc).
+		expect(r?.formDefinitionId).toBe(v1);
 		expect(r?.data).toEqual({ firstName: "X" });
 	});
 
