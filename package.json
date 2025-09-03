@@ -67,6 +67,7 @@
 	"devDependencies": {
 		"@biomejs/biome": "2.0.6",
 		"@electric-sql/pglite": "^0.3.4",
+		"@testcontainers/postgresql": "^11.5.1",
 		"@types/pg": "^8.15.4",
 		"@types/react": "^19.1.8",
 		"@types/react-dom": "^19.1.6",
