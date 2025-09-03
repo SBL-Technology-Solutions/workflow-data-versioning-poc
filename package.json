@@ -23,7 +23,8 @@
 		"db:studio:production": "dotenv -e .env.production pnpm drizzle-kit studio",
 		"check": "biome check --write",
 		"format": "biome format --write",
-		"lint": "biome lint --write"
+		"lint": "biome lint --write",
+		"knip": "dotenv -e .env knip"
 	},
 	"dependencies": {
 		"@fontsource-variable/outfit": "^5.2.6",
@@ -68,6 +69,7 @@
 		"@biomejs/biome": "2.0.6",
 		"@electric-sql/pglite": "^0.3.4",
 		"@testcontainers/postgresql": "^11.5.1",
+		"@types/node": "^24.3.0",
 		"@types/pg": "^8.15.4",
 		"@types/react": "^19.1.8",
 		"@types/react-dom": "^19.1.6",
@@ -75,6 +77,7 @@
 		"cross-env": "^7.0.3",
 		"dotenv-cli": "^9.0.0",
 		"drizzle-kit": "^0.31.4",
+		"knip": "^5.63.0",
 		"tsx": "^4.20.3",
 		"typescript": "^5.8.3",
 		"vite-tsconfig-paths": "^5.1.4",

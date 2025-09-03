@@ -1,0 +1,14 @@
+{
+	"$schema": "https://unpkg.com/knip@5/schema-jsonc.json",
+	"paths": {
+		"@/*": ["./src/*"]
+	},
+	"entry": [
+		"src/router.tsx",
+		"src/routes/**/*.tsx",
+		"src/routes/__root.tsx",
+		"src/routes/index.tsx"
+	],
+	"project": ["src/**/*.{ts,tsx}"],
+	"ignore": ["src/routeTree.gen.ts", "dist/**", "node_modules/**"]
+}
