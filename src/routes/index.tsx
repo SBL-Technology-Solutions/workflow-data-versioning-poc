@@ -62,15 +62,20 @@ function Home() {
 		<div className="p-8 relative">
 			<div className="flex justify-between items-center mb-8">
 				<h1 className="text-2xl font-bold">Dashboard</h1>
-				<Button
+				<div className="flex gap-2">
+					<a href="/workflows/new">
+						<Button variant="outline">New Workflow Definition</Button>
+					</a>
+					<Button
 					onClick={handleCreateWorkflow}
 					disabled={createWorkflowMutation.isPending}
 					variant="default"
-				>
+					>
 					{createWorkflowMutation.isPending
 						? "Creating..."
 						: "Create New Workflow"}
-				</Button>
+					</Button>
+				</div>
 			</div>
 
 			<Suspense fallback={<div>Loading workflow definitions...</div>}>
