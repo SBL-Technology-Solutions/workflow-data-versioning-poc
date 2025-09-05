@@ -13,3 +13,4 @@ dist-ssr
 .tanstack
 .nitro
 .netlify
+test-results
