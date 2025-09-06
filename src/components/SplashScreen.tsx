@@ -21,6 +21,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ show, onDismiss }) =
       <DialogContent 
         className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black border-none p-0 !top-0 !left-0 !translate-x-0 !translate-y-0 !w-screen !h-screen !max-w-none"
         showCloseButton={false}
+        onOpenAutoFocus={(e) => e.preventDefault()}
       >
         <div className="flex flex-col items-center w-full max-w-lg px-4 mt-[-10vh]">
           {/* Abstract Workflow Icon */}
