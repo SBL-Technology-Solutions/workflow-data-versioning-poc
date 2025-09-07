@@ -1,0 +1,1 @@
+CREATE INDEX "form_data_versions_data_idx" ON "form_data_versions" USING gin ("data");
