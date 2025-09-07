@@ -134,20 +134,24 @@ export const workflowInstances = pgTable("workflow_instances", {
 	...timestampsAndUserEditFields,
 });
 
-export const formDataVersions = pgTable("form_data_versions", {
-	id: integer().primaryKey().generatedAlwaysAsIdentity(),
-	workflowInstanceId: integer()
-		.references(() => workflowInstances.id)
-		.notNull(),
-	formDefId: integer()
-		.references(() => formDefinitions.id)
-		.notNull(),
-	version: integer().notNull(),
-	data: jsonb().$type<FormValues<FormSchema>>().notNull(),
-	patch: jsonb().$type<JSONPatch>().notNull(),
-	createdAt,
-	createdBy,
-});
+export const formDataVersions = pgTable(
+	"form_data_versions",
+	{
+		id: integer().primaryKey().generatedAlwaysAsIdentity(),
+		workflowInstanceId: integer()
+			.references(() => workflowInstances.id)
+			.notNull(),
+		formDefId: integer()
+			.references(() => formDefinitions.id)
+			.notNull(),
+		version: integer().notNull(),
+		data: jsonb().$type<FormValues<FormSchema>>().notNull(),
+		patch: jsonb().$type<JSONPatch>().notNull(),
+		createdAt,
+		createdBy,
+	},
+	(table) => [index("form_data_versions_data_idx").using("gin", table.data)],
+);
 
 // Zod schemas
 
