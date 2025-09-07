@@ -11,7 +11,7 @@ export function WorkflowInstances() {
 		<section className="mb-8">
 			<h2 className="text-xl font-semibold mb-4">Recent Workflow Instances</h2>
 			{workflowInstancesQuery.data.map((instance) => (
-				<div key={instance.id} className="mb-4 p-4 border rounded">
+				<div key={instance.id} className="mb-4 p-4 border rounded-lg">
 					<div>
 						ID:{" "}
 						<Link

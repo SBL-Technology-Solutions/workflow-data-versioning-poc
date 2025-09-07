@@ -13,7 +13,7 @@ export function WorkflowDefinitions() {
 				Recent Workflow Definitions
 			</h2>
 			{workflowDefinitionsQuery.data.map((wf) => (
-				<div key={wf.id} className="mb-4 p-4 border rounded">
+				<div key={wf.id} className="mb-4 p-4 border rounded-lg">
 					<div>
 						ID:{" "}
 						<Link
@@ -29,7 +29,7 @@ export function WorkflowDefinitions() {
 					<div>Version: {wf.version}</div>
 					<div>
 						Machine Config:{" "}
-						<pre className="text-sm bg-accent text-accent-foreground p-2 mt-2 rounded">
+						<pre className="text-sm bg-accent text-accent-foreground p-2 mt-2 rounded-lg">
 							{JSON.stringify(wf.machineConfig, null, 2)}
 						</pre>
 					</div>
