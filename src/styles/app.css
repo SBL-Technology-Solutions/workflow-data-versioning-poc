@@ -1,5 +1,4 @@
 /* biome-ignore format: unusual syntax needed for Tailwind import */
-@import "@fontsource-variable/outfit/index.css";
 @import "tailwindcss";
 @import "tw-animate-css";
 
