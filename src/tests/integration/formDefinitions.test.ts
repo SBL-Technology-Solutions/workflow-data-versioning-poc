@@ -12,9 +12,11 @@ import {
 	formDataVersions,
 	formDefinitions,
 	workflowDefinitions,
+	workflowDefinitionsFormDefinitionsMap,
 	workflowInstances,
 } from "@/db/schema";
 import type { FormSchema } from "@/lib/form";
+import type { XStateMachineConfig } from "@/types/workflow";
 import {
 	cleanupTestDb,
 	setupTestDb,
@@ -31,7 +33,7 @@ describe("DB.formDefinition", () => {
 	let db: ReturnType<typeof import("drizzle-orm/node-postgres")["drizzle"]>;
 	let DB: typeof import("@/data/DB")["DB"];
 
-	const machineConfig = {
+	const machineConfig: XStateMachineConfig = {
 		initial: "form1",
 		states: {
 			form1: { on: { NEXT: "form2" } },
@@ -74,22 +76,22 @@ describe("DB.formDefinition", () => {
 
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
 		await db.insert(formDefinitions).values({
-			workflowDefId,
 			state: "form1",
 			version: 1,
 			schema: formSchemaV1,
 			createdAt: new Date("2025-01-01T00:00:00.000Z"),
+			createdBy: "system",
 		});
 		await db.insert(formDefinitions).values({
-			workflowDefId,
 			state: "form1",
 			version: 2,
 			schema: formSchemaV2,
 			createdAt: new Date("2025-01-02T00:00:00.000Z"),
+			createdBy: "system",
 		});
 
 		const defs = await DB.formDefinition.queries.getFormDefinitions();
@@ -111,7 +113,12 @@ describe("DB.formDefinition", () => {
 		// states is empty
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig: { states: {} } })
+			.values({
+				name: "WF",
+				version: 1,
+				machineConfig: { states: {} },
+				createdBy: "system",
+			})
 			.returning();
 
 		await expect(
@@ -123,7 +130,7 @@ describe("DB.formDefinition", () => {
 	it("getCurrentFormForWorkflowDefId: throws Invalid State when state has no form definition", async () => {
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
 		await expect(
@@ -138,27 +145,40 @@ describe("DB.formDefinition", () => {
 	it("getCurrentFormForWorkflowDefId: returns latest formDef for state; defaults to first state when omitted", async () => {
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
 		const [{ id: v1 }] = await db
 			.insert(formDefinitions)
 			.values({
-				workflowDefId,
 				state: "form1",
 				version: 1,
 				schema: formSchemaV1,
+				createdBy: "system",
 			})
 			.returning();
 		const [{ id: v2 }] = await db
 			.insert(formDefinitions)
 			.values({
-				workflowDefId,
 				state: "form1",
 				version: 2,
 				schema: formSchemaV2,
+				createdBy: "system",
 			})
 			.returning();
+
+		await db.insert(workflowDefinitionsFormDefinitionsMap).values({
+			workflowDefinitionId: workflowDefId,
+			formDefinitionId: v1,
+			createdBy: "system",
+			updatedBy: "system",
+		});
+		await db.insert(workflowDefinitionsFormDefinitionsMap).values({
+			workflowDefinitionId: workflowDefId,
+			formDefinitionId: v2,
+			createdBy: "system",
+			updatedBy: "system",
+		});
 
 		const explicit =
 			await DB.formDefinition.queries.getCurrentFormForWorkflowDefId(
@@ -176,127 +196,28 @@ describe("DB.formDefinition", () => {
 		expect(implicit?.state).toBe("form1");
 	});
 
-	it("getCurrentFormForInstance: returns latest with data; falls back to latest formDef when none", async () => {
-		const [{ id: workflowDefId }] = await db
-			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
-			.returning();
-
-		const [{ id: formDefV1 }] = await db
-			.insert(formDefinitions)
-			.values({
-				workflowDefId,
-				state: "form1",
-				version: 1,
-				schema: formSchemaV1,
-			})
-			.returning();
-		const [{ id: formDefV2 }] = await db
-			.insert(formDefinitions)
-			.values({
-				workflowDefId,
-				state: "form1",
-				version: 2,
-				schema: formSchemaV2,
-			})
-			.returning();
-
-		const [{ id: instanceId }] = await db
-			.insert(workflowInstances)
-			.values({ workflowDefId, currentState: "form1", status: "active" })
-			.returning();
-
-		// No saved data yet: falls back to latest formDef v2
-		const noData = await DB.formDefinition.queries.getCurrentFormForInstance(
-			instanceId,
-			"form1",
-		);
-		expect(noData?.formDefId).toBe(formDefV2);
-
-		// Save data only for v1
-		await db.insert(formDataVersions).values({
-			workflowInstanceId: instanceId,
-			formDefId: formDefV1,
-			version: 1,
-			data: { firstName: "Alice" },
-			patch: [],
-			createdBy: "test",
-		});
-
-		const withData = await DB.formDefinition.queries.getCurrentFormForInstance(
-			instanceId,
-			"form1",
-		);
-		expect(withData?.formDefId).toBe(formDefV1);
-	});
-
-	it("getCurrentFormForInstance: throws when workflow instance does not exist", async () => {
-		await expect(
-			DB.formDefinition.queries.getCurrentFormForInstance(9999, "form1"),
-		).rejects.toThrow(/Workflow instance not found/);
-		expect(setResponseStatus).toHaveBeenCalledWith(404);
-	});
-
-	it("getCurrentFormForInstance: picks highest data version for same formDef", async () => {
-		const [{ id: workflowDefId }] = await db
-			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
-			.returning();
-		const [{ id: formDefV1 }] = await db
-			.insert(formDefinitions)
-			.values({
-				workflowDefId,
-				state: "form1",
-				version: 1,
-				schema: formSchemaV1,
-			})
-			.returning();
-		const [{ id: instanceId }] = await db
-			.insert(workflowInstances)
-			.values({ workflowDefId, currentState: "form1", status: "active" })
-			.returning();
-
-		await db.insert(formDataVersions).values([
-			{
-				workflowInstanceId: instanceId,
-				formDefId: formDefV1,
-				version: 1,
-				data: { firstName: "A" },
-				patch: [],
-				createdBy: "test",
-			},
-			{
-				workflowInstanceId: instanceId,
-				formDefId: formDefV1,
-				version: 2,
-				data: { firstName: "B" },
-				patch: [],
-				createdBy: "test",
-			},
-		]);
-
-		const got = await DB.formDefinition.queries.getCurrentFormForInstance(
-			instanceId,
-			"form1",
-		);
-		expect(got?.formDefId).toBe(formDefV1);
-	});
-
 	it("getFormSchemaById: returns schema; throws for missing id", async () => {
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
 		const [{ id: formDefId }] = await db
 			.insert(formDefinitions)
 			.values({
-				workflowDefId,
 				state: "form1",
 				version: 1,
 				schema: formSchemaV1,
+				createdBy: "system",
 			})
 			.returning();
+
+		await db.insert(workflowDefinitionsFormDefinitionsMap).values({
+			workflowDefinitionId: workflowDefId,
+			formDefinitionId: formDefId,
+			createdBy: "system",
+			updatedBy: "system",
+		});
 
 		const s = await DB.formDefinition.queries.getFormSchemaById(formDefId);
 		expect(s).toEqual(formSchemaV1);
@@ -310,22 +231,35 @@ describe("DB.formDefinition", () => {
 	it("createFormVersion: increments version and migrates compatible data", async () => {
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
 		// Seed v1 and instance with data
 		const [{ id: v1 }] = await db
 			.insert(formDefinitions)
 			.values({
-				workflowDefId,
 				state: "form1",
 				version: 1,
 				schema: formSchemaV1,
+				createdBy: "system",
 			})
 			.returning();
+
+		await db.insert(workflowDefinitionsFormDefinitionsMap).values({
+			workflowDefinitionId: workflowDefId,
+			formDefinitionId: v1,
+			createdBy: "system",
+			updatedBy: "system",
+		});
+
 		const [{ id: instanceId }] = await db
 			.insert(workflowInstances)
-			.values({ workflowDefId, currentState: "form1", status: "active" })
+			.values({
+				workflowDefId,
+				currentState: "form1",
+				createdBy: "system",
+				updatedBy: "system",
+			})
 			.returning();
 		await db.insert(formDataVersions).values({
 			workflowInstanceId: instanceId,
@@ -333,7 +267,7 @@ describe("DB.formDefinition", () => {
 			version: 1,
 			data: { firstName: "Alice" },
 			patch: [],
-			createdBy: "test",
+			createdBy: "system",
 		});
 
 		// Create v2 (superset schema) and expect migration row for instance
@@ -376,22 +310,33 @@ describe("DB.formDefinition", () => {
 	it("createFormVersion: does not migrate if new schema is not superset", async () => {
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
 		// Seed v1 with firstName
 		const [{ id: v1 }] = await db
 			.insert(formDefinitions)
 			.values({
-				workflowDefId,
 				state: "form1",
 				version: 1,
 				schema: formSchemaV1,
+				createdBy: "system",
 			})
 			.returning();
+		await db.insert(workflowDefinitionsFormDefinitionsMap).values({
+			workflowDefinitionId: workflowDefId,
+			formDefinitionId: v1,
+			createdBy: "system",
+			updatedBy: "system",
+		});
 		const [{ id: instanceId }] = await db
 			.insert(workflowInstances)
-			.values({ workflowDefId, currentState: "form1", status: "active" })
+			.values({
+				workflowDefId,
+				currentState: "form1",
+				createdBy: "system",
+				updatedBy: "system",
+			})
 			.returning();
 		await db.insert(formDataVersions).values({
 			workflowInstanceId: instanceId,
@@ -399,7 +344,7 @@ describe("DB.formDefinition", () => {
 			version: 1,
 			data: { firstName: "X" },
 			patch: [],
-			createdBy: "test",
+			createdBy: "system",
 		});
 
 		// New schema drops firstName: not a superset

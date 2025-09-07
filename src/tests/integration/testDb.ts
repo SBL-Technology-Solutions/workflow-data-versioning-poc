@@ -5,7 +5,9 @@ import {
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { reset } from "drizzle-seed";
 import { Pool } from "pg";
+import * as schema from "@/db/schema";
 
 export type TestDbContext = {
 	container: StartedPostgreSqlContainer;
@@ -23,7 +25,7 @@ export async function setupTestDb(
 	process.env.DATABASE_URL = connectionString;
 
 	const pool = new Pool({ connectionString });
-	const db = drizzle(pool);
+	const db = drizzle(pool, { schema, casing: "snake_case" });
 
 	await migrate(db, { migrationsFolder: "./drizzle/migrations" });
 
@@ -40,7 +42,5 @@ export async function cleanupTestDb(ctx: TestDbContext): Promise<void> {
 export async function truncateAllTables(
 	db: ReturnType<typeof drizzle>,
 ): Promise<void> {
-	await db.execute(
-		sql`TRUNCATE TABLE form_data_versions, workflow_instances, form_definitions, workflow_definitions RESTART IDENTITY CASCADE`,
-	);
+	await reset(db, schema);
 }
