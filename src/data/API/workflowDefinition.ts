@@ -43,4 +43,27 @@ export const workflowDefinition = {
 		getWorkflowDefinitionbyIdQueryOptions,
 	},
 	queryKeys: workflowDefinitionQueryKeys,
+	mutations: {
+        createWorkflowDefinitionServerFn: createServerFn({ method: "POST" })
+            .validator(
+                z.object({
+                    name: z.string().min(1, "Name is required"),
+                    steps: z
+                        .array(
+                            z.object({
+                                name: z.string().min(1),
+                                move: z.enum(["forward", "backward", "both", "terminal"]),
+                                formDefId: z.number().optional().nullable(),
+                            }),
+                        )
+                        .min(1, "At least one step is required"),
+                }),
+            )
+            .handler(async ({ data }) => {
+                return DB.workflowDefinition.mutations.createWorkflowDefinition({
+                    name: data.name,
+                    steps: data.steps,
+                });
+            }),
+    },
 } as const;
