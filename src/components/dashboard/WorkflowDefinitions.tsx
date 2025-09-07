@@ -29,7 +29,7 @@ export function WorkflowDefinitions() {
 					<div>Version: {wf.version}</div>
 					<div>
 						Machine Config:{" "}
-						<pre className="text-sm bg-secondary text-secondary-foreground p-2 mt-2 rounded">
+						<pre className="text-sm bg-accent text-accent-foreground p-2 mt-2 rounded">
 							{JSON.stringify(wf.machineConfig, null, 2)}
 						</pre>
 					</div>

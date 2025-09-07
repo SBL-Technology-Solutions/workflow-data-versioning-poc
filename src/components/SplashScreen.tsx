@@ -56,7 +56,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ show, onDismiss }) =
                 ease: [0.4, 0, 0.2, 1]
               }}
             >
-              <DialogTitle className="text-white text-3xl md:text-5xl font-medium tracking-tight text-center whitespace-nowrap mb-2">
+              <DialogTitle className="text-foreground text-3xl md:text-5xl font-medium tracking-tight text-center whitespace-nowrap mb-2">
                 Welcome to ApproveOS
               </DialogTitle>
             </motion.div>
@@ -72,7 +72,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ show, onDismiss }) =
               }}
               className="w-full flex justify-center"
             >
-              <DialogDescription className="text-zinc-300 text-lg text-center max-w-md mb-6">
+              <DialogDescription className="text-muted-foreground text-lg text-center max-w-md mb-6">
                 Effortlessly manage, automate, and track approvals<br/>
                 across your organization. ApproveOS brings clarity<br/>
                 and speed to every workflow.
@@ -94,7 +94,7 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ show, onDismiss }) =
           >
             <Button 
               onClick={onDismiss}
-              className="px-24 py-3 rounded-lg bg-[#6C5B7B] hover:bg-[#4B3C57] text-gray-200"
+              className="px-24 py-3 rounded-lg bg-chart-1 brightness-125 hover:brightness-110 text-primary-foreground shadow-lg border-2 border-primary-foreground/40"
             >
               Get started
             </Button>

@@ -16,7 +16,7 @@ export function FormDefinitions() {
 					<div>Version: {form.version}</div>
 					<div>
 						Schema:{" "}
-						<pre className="text-sm bg-secondary text-secondary-foreground p-2 mt-2 rounded">
+						<pre className="text-sm bg-accent text-accent-foreground p-2 mt-2 rounded">
 							{JSON.stringify(form.schema, null, 2)}
 						</pre>
 					</div>

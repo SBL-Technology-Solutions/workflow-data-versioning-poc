@@ -16,13 +16,13 @@ export function FormDataVersions() {
 					<div>Created By: {data.createdBy}</div>
 					<div>
 						Data:{" "}
-						<pre className="text-sm bg-secondary text-secondary-foreground p-2 mt-2 rounded">
+						<pre className="text-sm bg-accent text-accent-foreground p-2 mt-2 rounded">
 							{JSON.stringify(data.data, null, 2)}
 						</pre>
 					</div>
 					<div>
 						Patch:{" "}
-						<pre className="text-sm bg-secondary text-secondary-foreground p-2 mt-2 rounded">
+						<pre className="text-sm bg-accent text-accent-foreground p-2 mt-2 rounded">
 							{JSON.stringify(data.patch, null, 2)}
 						</pre>
 					</div>
