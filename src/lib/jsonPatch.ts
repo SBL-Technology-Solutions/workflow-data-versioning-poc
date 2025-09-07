@@ -1,4 +1,4 @@
-import pkg from "fast-json-patch";
+import pkg, { type Operation } from "fast-json-patch";
 
 const { compare } = pkg;
 
@@ -15,3 +15,5 @@ export function createJSONPatch(
 ) {
 	return compare(oldObj, newObj);
 }
+
+export type JSONPatch = Operation[];

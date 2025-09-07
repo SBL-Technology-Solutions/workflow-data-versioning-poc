@@ -1,4 +1,5 @@
 import { reset, seed } from "drizzle-seed";
+import type { XStateMachineConfig } from "@/types/workflow";
 import { dbClient } from "./client";
 import * as schema from "./schema";
 
@@ -7,7 +8,7 @@ export const seedData = async () => {
 	await reset(dbClient, schema);
 
 	// 2) Define the exact machineConfig(s) you want to seed
-	const machineConfig = {
+	const machineConfig: XStateMachineConfig = {
 		initial: "form1",
 		states: {
 			form1: { on: { NEXT: "form2" } },

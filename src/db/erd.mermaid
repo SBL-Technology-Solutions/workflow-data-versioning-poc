@@ -1,0 +1,68 @@
+erDiagram
+    WORKFLOW_DEFINITIONS {
+        integer id PK "Generated Identity"
+        varchar name "Workflow name"
+        integer version "Version number"
+        jsonb machineConfig "XState machine config"
+        text[] states "Generated from machine config"
+        boolean isCurrent "Is current version"
+        timestamp createdAt "Creation timestamp"
+    }
+
+    FORM_DEFINITIONS {
+        integer id PK "Generated Identity"
+        varchar state "XState state name"
+        integer version "Version number"
+        jsonb schema "Zod form schema"
+        boolean isCurrent "Is current version"
+        timestamp createdAt "Creation timestamp"
+    }
+
+    WORKFLOW_DEFINITIONS_FORM_DEFINITIONS_MAP {
+        integer workflowDefId PK,FK "Workflow definition ID"
+        integer formDefId PK,FK "Form definition ID"
+        timestamp createdAt "Creation timestamp"
+        timestamp updatedAt "Update timestamp"
+        varchar createdBy "Created by user"
+        varchar updatedBy "Updated by user"
+    }
+
+    WORKFLOW_INSTANCES {
+        integer id PK "Generated Identity"
+        integer workflowDefId FK "Workflow definition ID"
+        varchar currentState "Current workflow state"
+        varchar status "active/completed/suspended"
+        timestamp createdAt "Creation timestamp"
+        timestamp updatedAt "Update timestamp"
+    }
+
+    FORM_DATA_VERSIONS {
+        integer id PK "Generated Identity"
+        integer workflowInstanceId FK "Workflow instance ID"
+        integer formDefId FK "Form definition ID"
+        integer version "Data version number"
+        jsonb data "Form data"
+        jsonb patch "JSON Patch changes"
+        timestamp createdAt "Creation timestamp"
+        varchar createdBy "Created by user"
+    }
+
+    %% Relationships
+    WORKFLOW_DEFINITIONS ||--o{ WORKFLOW_DEFINITIONS_FORM_DEFINITIONS_MAP : "has many"
+    FORM_DEFINITIONS ||--o{ WORKFLOW_DEFINITIONS_FORM_DEFINITIONS_MAP : "has many"
+    
+    WORKFLOW_DEFINITIONS ||--o{ WORKFLOW_INSTANCES : "has many instances"
+    
+    WORKFLOW_INSTANCES ||--o{ FORM_DATA_VERSIONS : "has many data versions"
+    FORM_DEFINITIONS ||--o{ FORM_DATA_VERSIONS : "defines structure for"
+
+    %% Unique constraints and indexes
+    WORKFLOW_DEFINITIONS {
+        string unique_name_version "UNIQUE(name, version)"
+        string unique_current_per_name "UNIQUE(name) WHERE isCurrent=true"
+    }
+
+    FORM_DEFINITIONS {
+        string unique_state_version "UNIQUE(state, version)"
+        string unique_current_per_state "UNIQUE(state) WHERE isCurrent=true"
+    }
