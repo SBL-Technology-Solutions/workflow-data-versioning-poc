@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@fontsource-variable/outfit':
-        specifier: ^5.2.6
-        version: 5.2.6
       '@radix-ui/react-checkbox':
         specifier: ^1.3.2
         version: 1.3.2(@types/react-dom@19.1.6(@types/react@19.1.8))(@types/react@19.1.8)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -34,7 +31,7 @@ importers:
         version: 4.1.11(vite@7.0.1(@types/node@24.0.10)(jiti@2.5.1)(lightningcss@1.30.1)(terser@5.43.1)(tsx@4.20.3)(yaml@2.8.1))
       '@tanstack/react-form':
         specifier: ^1.12.4
-        version: 1.12.4(955b22303abe9b2a6e89b0d74e9d1de7)
+        version: 1.12.4(gj3xshvzwkdnzx765zf2rxbmdy)
       '@tanstack/react-query':
         specifier: ^5.81.5
         version: 5.81.5(react@19.1.0)
@@ -1073,9 +1070,6 @@ packages:
 
   '@floating-ui/utils@0.2.10':
     resolution: {integrity: sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ==}
-
-  '@fontsource-variable/outfit@5.2.6':
-    resolution: {integrity: sha512-0wNlmsinE4taUgmRySxld13//NtnGwN58mBegexyhYuFqiQG/4Ho+5CCkiFxXijnojmCiaBaKkYt72LDwZHiKg==}
 
   '@grpc/grpc-js@1.13.4':
     resolution: {integrity: sha512-GsFaMXCkMqkKIvwCQjCrwH+GHbPKBjhwo/8ZuUkWHqbI73Kky9I+pQltrlT0+MWpedCoosda53lgjYfyEPgxBg==}
@@ -6440,8 +6434,6 @@ snapshots:
 
   '@floating-ui/utils@0.2.10': {}
 
-  '@fontsource-variable/outfit@5.2.6': {}
-
   '@grpc/grpc-js@1.13.4':
     dependencies:
       '@grpc/proto-loader': 0.7.15
@@ -7508,7 +7500,7 @@ snapshots:
 
   '@tanstack/query-devtools@5.81.2': {}
 
-  '@tanstack/react-form@1.12.4(955b22303abe9b2a6e89b0d74e9d1de7)':
+  '@tanstack/react-form@1.12.4(gj3xshvzwkdnzx765zf2rxbmdy)':
     dependencies:
       '@tanstack/form-core': 1.12.4
       '@tanstack/react-store': 0.7.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
