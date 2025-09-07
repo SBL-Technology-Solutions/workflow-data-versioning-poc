@@ -162,14 +162,25 @@ export const workflowDefinitionsInsertSchema = createInsertSchema(
 	createdAt: true,
 });
 
+export type WorkflowDefinitionsInsert = z.infer<
+	typeof workflowDefinitionsInsertSchema
+>;
+
 export const workflowDefinitionsSelectSchema =
 	createSelectSchema(workflowDefinitions);
+export type WorkflowDefinitionsSelect = z.infer<
+	typeof workflowDefinitionsSelectSchema
+>;
 
 export const workflowDefinitionsUpdateSchema = createUpdateSchema(
 	workflowDefinitions,
 ).omit({
 	createdAt: true,
 });
+
+export type WorkflowDefinitionsUpdate = z.infer<
+	typeof workflowDefinitionsUpdateSchema
+>;
 
 export const formDefinitionsInsertSchema = createInsertSchema(
 	formDefinitions,
@@ -178,7 +189,10 @@ export const formDefinitionsInsertSchema = createInsertSchema(
 	createdAt: true,
 });
 
+export type FormDefinitionsInsert = z.infer<typeof formDefinitionsInsertSchema>;
+
 export const formDefinitionsSelectSchema = createSelectSchema(formDefinitions);
+export type FormDefinitionsSelect = z.infer<typeof formDefinitionsSelectSchema>;
 
 export const formDefinitionsUpdateSchema = createUpdateSchema(
 	formDefinitions,
@@ -186,11 +200,17 @@ export const formDefinitionsUpdateSchema = createUpdateSchema(
 	createdAt: true,
 });
 
+export type FormDefinitionsUpdate = z.infer<typeof formDefinitionsUpdateSchema>;
+
 export const workflowDefinitionsFormDefinitionsMapInsertSchema =
 	createInsertSchema(workflowDefinitionsFormDefinitionsMap).omit({
 		createdAt: true,
 		updatedAt: true,
 	});
+
+export type WorkflowDefinitionsFormDefinitionsMapInsert = z.infer<
+	typeof workflowDefinitionsFormDefinitionsMapInsertSchema
+>;
 
 export const workflowDefinitionsFormDefinitionsMapUpdateSchema =
 	createUpdateSchema(workflowDefinitionsFormDefinitionsMap).omit({
@@ -199,8 +219,16 @@ export const workflowDefinitionsFormDefinitionsMapUpdateSchema =
 		createdBy: true,
 	});
 
+export type WorkflowDefinitionsFormDefinitionsMapUpdate = z.infer<
+	typeof workflowDefinitionsFormDefinitionsMapUpdateSchema
+>;
+
 export const workflowDefinitionsFormDefinitionsMapSelectSchema =
 	createSelectSchema(workflowDefinitionsFormDefinitionsMap);
+
+export type WorkflowDefinitionsFormDefinitionsMapSelect = z.infer<
+	typeof workflowDefinitionsFormDefinitionsMapSelectSchema
+>;
 
 export const workflowInstancesInsertSchema = createInsertSchema(
 	workflowInstances,
@@ -210,12 +238,20 @@ export const workflowInstancesInsertSchema = createInsertSchema(
 	updatedAt: true,
 });
 
+export type WorkflowInstancesInsert = z.infer<
+	typeof workflowInstancesInsertSchema
+>;
+
 export const workflowInstancesUpdateSchema = createUpdateSchema(
 	workflowInstances,
 ).omit({
 	createdAt: true,
 	updatedAt: true,
 });
+
+export type WorkflowInstancesUpdate = z.infer<
+	typeof workflowInstancesUpdateSchema
+>;
 
 export const workflowInstancesSelectSchema = createSelectSchema(
 	workflowInstances,
@@ -227,6 +263,10 @@ export const workflowInstancesSelectSchema = createSelectSchema(
 	},
 );
 
+export type WorkflowInstancesSelect = z.infer<
+	typeof workflowInstancesSelectSchema
+>;
+
 export const formDataVersionsInsertSchema = createInsertSchema(
 	formDataVersions,
 ).omit({
@@ -234,14 +274,26 @@ export const formDataVersionsInsertSchema = createInsertSchema(
 	createdAt: true,
 });
 
+export type FormDataVersionsInsert = z.infer<
+	typeof formDataVersionsInsertSchema
+>;
+
 export const formDataVersionsUpdateSchema = createUpdateSchema(
 	formDataVersions,
 ).omit({
 	createdAt: true,
 });
 
+export type FormDataVersionsUpdate = z.infer<
+	typeof formDataVersionsUpdateSchema
+>;
+
 export const formDataVersionsSelectSchema =
 	createSelectSchema(formDataVersions);
+
+export type FormDataVersionsSelect = z.infer<
+	typeof formDataVersionsSelectSchema
+>;
 
 // Relations
 

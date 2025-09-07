@@ -5,9 +5,11 @@ import {
 	formDataVersions,
 	formDefinitions,
 	workflowDefinitions,
+	workflowDefinitionsFormDefinitionsMap,
 	workflowInstances,
 } from "@/db/schema";
 import type { FormSchema } from "@/lib/form";
+import type { DbTransaction } from "@/types/db";
 
 /**
  * Retrieves all form definitions from the database, ordered by creation date in descending order.
@@ -19,64 +21,6 @@ const getFormDefinitions = async () => {
 		.select()
 		.from(formDefinitions)
 		.orderBy(desc(formDefinitions.createdAt));
-};
-
-/**
- * Retrieves the latest form definition with associated data for a given workflow instance and state.
- *
- * If no form definition with data exists for the specified instance and state, falls back to the latest form definition for the corresponding workflow definition and state.
- *
- * @param workflowInstanceId - The ID of the workflow instance
- * @param state - The workflow state to filter form definitions by
- * @returns The latest form definition with data for the instance and state, or the latest form definition for the workflow definition and state if none exists with data
- * @throws Error if the workflow instance is not found
- */
-const getCurrentFormForInstance = async (
-	workflowInstanceId: number,
-	state: string,
-) => {
-	// First get the workflow instance to get its workflowDefId
-	const instance = await dbClient
-		.select({
-			workflowDefId: workflowInstances.workflowDefId,
-		})
-		.from(workflowInstances)
-		.where(eq(workflowInstances.id, workflowInstanceId))
-		.limit(1);
-
-	if (!instance.length) {
-		throw new Error("Workflow instance not found");
-	}
-
-	// Get the latest form definition that has data for this instance and state
-	const result = await dbClient
-		.select({
-			formDefId: formDefinitions.id,
-			schema: formDefinitions.schema,
-		})
-		.from(formDefinitions)
-		.innerJoin(
-			formDataVersions,
-			and(
-				eq(formDataVersions.formDefId, formDefinitions.id),
-				eq(formDataVersions.workflowInstanceId, workflowInstanceId),
-			),
-		)
-		.where(
-			and(
-				eq(formDefinitions.workflowDefId, instance[0].workflowDefId),
-				eq(formDefinitions.state, state),
-			),
-		)
-		.orderBy(desc(formDefinitions.version))
-		.limit(1);
-
-	// If no form with data exists, fall back to getting the latest form definition
-	if (!result.length) {
-		return getCurrentFormForWorkflowDefId(instance[0].workflowDefId, state);
-	}
-
-	return result[0];
 };
 
 /**
@@ -116,9 +60,19 @@ const getCurrentFormForWorkflowDefId = async (
 		})
 		.from(workflowDefinitions)
 		.leftJoin(
+			workflowDefinitionsFormDefinitionsMap,
+			eq(
+				workflowDefinitions.id,
+				workflowDefinitionsFormDefinitionsMap.workflowDefinitionId,
+			),
+		)
+		.leftJoin(
 			formDefinitions,
 			and(
-				eq(workflowDefinitions.id, formDefinitions.workflowDefId),
+				eq(
+					workflowDefinitionsFormDefinitionsMap.formDefinitionId,
+					formDefinitions.id,
+				),
 				eq(formDefinitions.state, statesJoinExpr),
 			),
 		)
@@ -148,12 +102,13 @@ const getCurrentFormForWorkflowDefId = async (
 
 // Helper: Migrate compatible form data versions to new form definition
 const migrateCompatibleFormDataVersions = async (
+	tx: DbTransaction,
 	workflowDefId: number,
 	state: string,
 	schema: FormSchema,
 	newFormDefId: number,
 ) => {
-	const matchingInstances = await dbClient
+	const matchingInstances = await tx
 		.select({
 			id: workflowInstances.id,
 			currentState: workflowInstances.currentState,
@@ -167,7 +122,7 @@ const migrateCompatibleFormDataVersions = async (
 		);
 
 	for (const instance of matchingInstances) {
-		const latestData = await dbClient
+		const latestData = await tx
 			.select({
 				id: formDataVersions.id,
 				formDefId: formDataVersions.formDefId,
@@ -194,7 +149,7 @@ const migrateCompatibleFormDataVersions = async (
 		const isSuperset = oldFields.every((f) => newFields.includes(f));
 
 		if (isSuperset) {
-			await dbClient.insert(formDataVersions).values({
+			await tx.insert(formDataVersions).values({
 				workflowInstanceId: instance.id,
 				formDefId: newFormDefId,
 				version: 1,
@@ -221,49 +176,82 @@ const createFormVersion = async (
 	state: string,
 	schema: FormSchema,
 ) => {
-	const currentVersion = await dbClient
-		.select()
+	const [currentVersion] = await dbClient
+		.select({
+			id: formDefinitions.id,
+			version: formDefinitions.version,
+		})
 		.from(formDefinitions)
-		.where(
+		.innerJoin(
+			workflowDefinitionsFormDefinitionsMap,
 			and(
-				eq(formDefinitions.workflowDefId, workflowDefId),
-				eq(formDefinitions.state, state),
+				eq(
+					formDefinitions.id,
+					workflowDefinitionsFormDefinitionsMap.formDefinitionId,
+				),
+				eq(
+					workflowDefinitionsFormDefinitionsMap.workflowDefinitionId,
+					workflowDefId,
+				),
 			),
 		)
+		.where(eq(formDefinitions.state, state))
 		.orderBy(desc(formDefinitions.version))
 		.limit(1);
 
-	const nextVersion = currentVersion.length ? currentVersion[0].version + 1 : 1;
+	const nextVersion = currentVersion ? currentVersion.version + 1 : 1;
 
-	const [newFormDef] = await dbClient
-		.insert(formDefinitions)
-		.values({
-			workflowDefId,
-			state,
-			version: nextVersion,
-			schema,
-		})
-		.returning();
+	const result = await dbClient.transaction(async (tx) => {
+		if (currentVersion) {
+			await tx
+				.update(formDefinitions)
+				.set({
+					isCurrent: false,
+				})
+				.where(eq(formDefinitions.id, currentVersion.id));
+		}
 
-	// Migrate compatible form data versions
-	try {
-		await migrateCompatibleFormDataVersions(
-			workflowDefId,
-			state,
-			schema,
-			newFormDef.id,
-		);
-	} catch (error) {
-		console.error("Failed to migrate form data versions:", error);
-		// Consider whether to rollback the form definition creation or just log the error
-		throw new Error(
-			`Form version created but data migration failed: ${
-				error instanceof Error ? error.message : String(error)
-			}`,
-		);
-	}
+		const [newFormDef] = await tx
+			.insert(formDefinitions)
+			.values({
+				state,
+				version: nextVersion,
+				schema,
+				//TODO: Remove system when we have users setup
+				createdBy: "system",
+				isCurrent: true,
+			})
+			.returning();
 
-	return [{ id: newFormDef.id }];
+		await tx.insert(workflowDefinitionsFormDefinitionsMap).values({
+			workflowDefinitionId: workflowDefId,
+			formDefinitionId: newFormDef.id,
+			createdBy: "system",
+			updatedBy: "system",
+		});
+
+		// Migrate compatible form data versions
+		try {
+			await migrateCompatibleFormDataVersions(
+				tx,
+				workflowDefId,
+				state,
+				schema,
+				newFormDef.id,
+			);
+		} catch (error) {
+			console.error("Failed to migrate form data versions:", error);
+			// Consider whether to rollback the form definition creation or just log the error
+			throw new Error(
+				`Form version created but data migration failed: ${
+					error instanceof Error ? error.message : String(error)
+				}`,
+			);
+		}
+
+		return [{ id: newFormDef.id }];
+	});
+	return result;
 };
 
 /**
@@ -281,6 +269,7 @@ const getFormSchemaById = async (formDefId: number) => {
 		.limit(1);
 
 	if (!formDefinition.length) {
+		setResponseStatus(404);
 		throw new Error(`Form definition with id ${formDefId} not found`);
 	}
 
@@ -290,7 +279,6 @@ const getFormSchemaById = async (formDefId: number) => {
 export const formDefinition = {
 	queries: {
 		getFormDefinitions,
-		getCurrentFormForInstance,
 		getCurrentFormForWorkflowDefId,
 		getFormSchemaById,
 	},

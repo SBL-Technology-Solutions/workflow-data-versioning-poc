@@ -32,34 +32,6 @@ const getFormDefinitionsQueryOptions = () => ({
 	queryFn: () => getFormDefinitions(),
 });
 
-const getCurrentFormForInstanceServerFn = createServerFn({
-	method: "GET",
-})
-	.validator(
-		z.object({
-			workflowInstanceId: z.number(),
-			state: z.string(),
-		}),
-	)
-	.handler(async ({ data: { workflowInstanceId, state } }) => {
-		return DB.formDefinition.queries.getCurrentFormForInstance(
-			workflowInstanceId,
-			state,
-		);
-	});
-
-const getCurrentFormForInstanceQueryOptions = (
-	workflowInstanceId: number,
-	state: string,
-) => ({
-	queryKey: formDefinitionQueryKeys.definitionbyWorkflowInstanceId(
-		workflowInstanceId,
-		state,
-	),
-	queryFn: () =>
-		getCurrentFormForInstanceServerFn({ data: { workflowInstanceId, state } }),
-});
-
 const getCurrentFormDefinitionByWorkflowDefIdServerFn = createServerFn({
 	method: "GET",
 })
@@ -104,7 +76,6 @@ const createFormVersionServerFn = createServerFn({
 export const formDefinition = {
 	queries: {
 		getFormDefinitionsQueryOptions,
-		getCurrentFormForInstanceQueryOptions,
 		getCurrentFormDefinitionByWorkflowDefIdQueryOptions,
 	},
 	mutations: {
