@@ -1,12 +1,15 @@
 import { setResponseStatus } from "@tanstack/react-start/server";
 import { and, desc, eq, sql } from "drizzle-orm";
 import type { Operation } from "fast-json-patch";
-import type * as z from "zod";
 import { dbClient } from "@/db/client";
 import {
+	type FormDataVersionsInsert,
+	type FormDefinitionsSelect,
 	formDataVersions,
 	formDefinitions,
+	type WorkflowInstancesSelect,
 	workflowDefinitions,
+	workflowDefinitionsFormDefinitionsMap,
 	workflowInstances,
 } from "@/db/schema";
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
@@ -26,23 +29,20 @@ const getFormDataVersions = async () => {
 };
 
 const getCurrentFormDataForWorkflowInstance = async (
-	workflowInstanceId: number,
-	state?: string,
+	workflowInstanceId: WorkflowInstancesSelect["id"],
+	state?: FormDefinitionsSelect["state"],
 ) => {
 	const stateOrNull = state || null;
-	const currentStateSchema =
-		DB.workflowInstance.queries.workflowInstancesSelectSchema.pick({
-			currentState: true,
-		}).shape.currentState;
-	type CurrentState = z.infer<typeof currentStateSchema>;
-	const providedStateOrCurrentState = sql<CurrentState>`Coalesce(${stateOrNull}, ${workflowInstances.currentState})`;
+
+	const providedStateOrCurrentState = sql<
+		FormDefinitionsSelect["state"]
+	>`Coalesce(${stateOrNull}, ${workflowInstances.currentState})`;
 
 	const [result] = await dbClient
 		.select({
 			workflowInstanceId: workflowInstances.id,
 			workflowInstanceCurrentState: workflowInstances.currentState,
 			workflowInstanceState: providedStateOrCurrentState,
-			workflowInstanceStatus: workflowInstances.status,
 			workflowDefinitionId: workflowDefinitions.id,
 			workflowDefinitionStates: workflowDefinitions.states,
 			workflowDefinitionMachineConfig: workflowDefinitions.machineConfig,
@@ -58,9 +58,19 @@ const getCurrentFormDataForWorkflowInstance = async (
 			eq(workflowInstances.workflowDefId, workflowDefinitions.id),
 		)
 		.leftJoin(
+			workflowDefinitionsFormDefinitionsMap,
+			eq(
+				workflowDefinitions.id,
+				workflowDefinitionsFormDefinitionsMap.workflowDefinitionId,
+			),
+		)
+		.leftJoin(
 			formDefinitions,
 			and(
-				eq(formDefinitions.workflowDefId, workflowDefinitions.id),
+				eq(
+					workflowDefinitionsFormDefinitionsMap.formDefinitionId,
+					formDefinitions.id,
+				),
 				eq(formDefinitions.state, providedStateOrCurrentState),
 			),
 		)
@@ -82,7 +92,7 @@ const getCurrentFormDataForWorkflowInstance = async (
 			// Absolute final tiebreaker for stability
 			desc(formDataVersions.id),
 			// If no saved data exists (NULL createdAt), prefer latest form definition
-			desc(formDefinitions.version),
+			sql`${formDefinitions.version} DESC NULLS LAST`,
 		)
 		.limit(1);
 
@@ -152,17 +162,17 @@ const getCurrentFormDataForWorkflowInstance = async (
  * @throws If the input data fails schema validation.
  */
 const saveFormData = async (
-	workflowInstanceId: number,
-	formDefId: number,
-	data: Record<string, string>,
+	workflowInstanceId: WorkflowInstancesSelect["id"],
+	formDefId: FormDefinitionsSelect["id"],
+	data: FormDataVersionsInsert["data"],
 ) => {
 	let patch: Operation[] = []; // First version has no changes to patch
 
 	// get form schema from formDefId and convert to zod schema
-	const formSchema =
-		await DB.formDefinition.queries.getFormSchemaById(formDefId);
+	const formDefinition =
+		await DB.formDefinition.queries.getFormDefinitionById(formDefId);
 	const validatedPartialData = ConvertToZodSchemaAndValidate(
-		formSchema,
+		formDefinition.schema,
 		data,
 		true,
 	);
@@ -172,7 +182,7 @@ const saveFormData = async (
 		throw new Error(formatZodErrors(validatedPartialData));
 	}
 
-	const previousData = await dbClient
+	const [previousData] = await dbClient
 		.select()
 		.from(formDataVersions)
 		.where(
@@ -184,17 +194,23 @@ const saveFormData = async (
 		.orderBy(desc(formDataVersions.version))
 		.limit(1);
 
-	if (previousData.length) {
-		patch = createJSONPatch(previousData[0].data, data);
+	if (previousData) {
+		patch = createJSONPatch(previousData.data, data);
+		const isNoChange = patch.length === 0;
+		if (isNoChange) {
+			setResponseStatus(200);
+			return previousData;
+		}
 	}
 
-	// Returns a plain object as the QueryResult object cannot be passed from server to client
-	const result = await dbClient
+	const version = previousData ? previousData.version + 1 : 1;
+
+	const [result] = await dbClient
 		.insert(formDataVersions)
 		.values({
 			workflowInstanceId,
 			formDefId,
-			version: previousData.length ? previousData[0].version + 1 : 1,
+			version,
 			data,
 			patch,
 			createdBy: "user",
