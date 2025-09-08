@@ -1,8 +1,13 @@
+import { setResponseStatus } from "@tanstack/react-start/server";
 import { desc, eq } from "drizzle-orm";
-import { createActor, createMachine } from "xstate";
+import { createActor, createMachine, type Snapshot } from "xstate";
 import { DB } from "@/data/DB";
 import { dbClient } from "@/db/client";
 import {
+	type FormDataVersionsInsert,
+	type FormDefinitionsSelect,
+	type WorkflowDefinitionsSelect,
+	type WorkflowInstancesSelect,
 	workflowDefinitions,
 	workflowInstances,
 	workflowInstancesSelectSchema,
@@ -29,8 +34,8 @@ const getWorkflowInstances = async () => {
  * @param id - The unique identifier of the workflow instance to retrieve
  * @returns An object containing the workflow instance's ID, workflow definition ID, current state, and machine configuration
  */
-const getWorkflowInstanceById = async (id: number) => {
-	const result = await dbClient
+const getWorkflowInstanceById = async (id: WorkflowInstancesSelect["id"]) => {
+	const [workflowInstance] = await dbClient
 		.select({
 			id: workflowInstances.id,
 			workflowDefId: workflowInstances.workflowDefId,
@@ -45,59 +50,66 @@ const getWorkflowInstanceById = async (id: number) => {
 		.where(eq(workflowInstances.id, id))
 		.limit(1);
 
-	if (!result.length) {
+	if (!workflowInstance) {
 		throw new Error("Workflow instance not found");
 	}
 
-	if (!result[0].workflowDefId) {
+	if (!workflowInstance.workflowDefId) {
 		throw new Error("Workflow definition ID not found");
 	}
 
-	if (!result[0].machineConfig) {
+	if (!workflowInstance.machineConfig) {
 		throw new Error("Workflow definition not found");
 	}
 
-	return result[0];
+	return workflowInstance;
 };
 
-const createWorkflowInstance = async (workflowDefId: number) => {
+const createWorkflowInstance = async (
+	workflowDefId: WorkflowDefinitionsSelect["id"],
+) => {
 	// First, get the workflow definition to extract the initial state
-	const workflowDef = await dbClient
+	const [workflowDef] = await dbClient
 		.select()
 		.from(workflowDefinitions)
 		.where(eq(workflowDefinitions.id, workflowDefId))
 		.limit(1);
 
-	if (!workflowDef[0]) {
+	if (!workflowDef) {
+		setResponseStatus(404);
 		throw new Error(`Workflow definition with id ${workflowDefId} not found`);
 	}
 
-	// Extract initial state from the machine config
-	const machineConfig = workflowDef[0].machineConfig as {
-		initial?: string;
-		states: Record<string, any>;
-	};
+	const machineConfig = workflowDef.machineConfig;
 
 	const initialState =
-		machineConfig.initial ?? Object.keys(machineConfig.states)[0];
+		machineConfig?.initial ?? Object.keys(machineConfig?.states ?? {})[0];
 
-	const result = await dbClient
+	if (!initialState || typeof initialState !== "string") {
+		setResponseStatus(404);
+		throw new Error(
+			`Invalid machine config missing initial state: ${machineConfig}`,
+		);
+	}
+
+	const [createdWorkflowInstance] = await dbClient
 		.insert(workflowInstances)
 		.values({
 			workflowDefId,
 			currentState: initialState,
-			status: "active",
+			createdBy: "system",
+			updatedBy: "system",
 		})
 		.returning();
 
-	return result[0];
+	return createdWorkflowInstance;
 };
 
 const sendWorkflowEvent = async (
-	instanceId: number,
-	formDefId: number,
+	instanceId: WorkflowInstancesSelect["id"],
+	formDefId: FormDefinitionsSelect["id"],
 	event: string,
-	formData: Record<string, string>,
+	formData: FormDataVersionsInsert["data"],
 ) => {
 	// Save the form data to the db first so we persist data even if not all of the required data is provided
 	await DB.formDataVersion.mutations.saveFormData(
@@ -108,20 +120,27 @@ const sendWorkflowEvent = async (
 
 	// get the workflow instance
 	const workflowInstance = await getWorkflowInstanceById(instanceId);
-	const formSchema =
-		await DB.formDefinition.queries.getFormSchemaById(formDefId);
+	const formDefinition =
+		await DB.formDefinition.queries.getFormDefinitionById(formDefId);
 
 	// validate the form data against the form schema and throw an error if any of the required fields are not provided
-	const validatedData = ConvertToZodSchemaAndValidate(formSchema, formData);
+	const validatedData = ConvertToZodSchemaAndValidate(
+		formDefinition.schema,
+		formData,
+	);
 
 	if (!validatedData.success) {
+		setResponseStatus(400);
 		throw new Error(`Invalid data provided: ${formatZodErrors(validatedData)}`);
 	}
 
+	if (!workflowInstance.machineConfig) {
+		setResponseStatus(400);
+		throw new Error("Machine config is missing");
+	}
+
 	// create the xstate actor based on the machine config and the current state
-	const workflowMachine = createMachine(
-		workflowInstance.machineConfig as Record<string, any>,
-	);
+	const workflowMachine = createMachine(workflowInstance.machineConfig);
 	const resolvedState = workflowMachine.resolveState({
 		value: workflowInstance.currentState,
 	});
@@ -132,20 +151,32 @@ const sendWorkflowEvent = async (
 	// start the actor
 	restoredActor.start();
 
-	// send the event to the actor
-	//TODO: Need to handle errors here
-	restoredActor.send({ type: event });
+	// send the event to the actor with error handling
+	try {
+		restoredActor.send({ type: event });
+	} catch (err) {
+		// ensure we stop the actor if sending fails
+		restoredActor.stop();
+		setResponseStatus(400);
+		const message = err instanceof Error ? err.message : String(err);
+		throw new Error(
+			`Failed to process event "${event}" from state "${workflowInstance.currentState}": ${message}`,
+		);
+	}
 
 	// get the current state
-	const persistedSnapshot = restoredActor.getPersistedSnapshot();
-	const updatedState = (persistedSnapshot as any).value as string;
+	const persistedSnapshot =
+		restoredActor.getPersistedSnapshot() as Snapshot<unknown> & {
+			value: string;
+		};
+	const updatedState = persistedSnapshot.value;
 
 	if (workflowInstance.currentState === updatedState) {
 		throw new Error("The workflow did not progress forward");
 	}
 
 	// persist the updated state to the db
-	const result = await dbClient
+	const [updatedWorkflowInstance] = await dbClient
 		.update(workflowInstances)
 		.set({
 			currentState: updatedState,
@@ -155,7 +186,7 @@ const sendWorkflowEvent = async (
 		.returning();
 
 	restoredActor.stop();
-	return result[0];
+	return updatedWorkflowInstance;
 };
 
 export const workflowInstance = {
