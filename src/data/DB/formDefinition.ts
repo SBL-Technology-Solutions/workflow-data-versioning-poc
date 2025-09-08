@@ -3,8 +3,10 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import type { DbTransaction } from "@/db/client";
 import { dbClient } from "@/db/client";
 import {
+	type FormDefinitionsSelect,
 	formDataVersions,
 	formDefinitions,
+	type WorkflowDefinitionsSelect,
 	workflowDefinitions,
 	workflowDefinitionsFormDefinitionsMap,
 	workflowInstances,
@@ -33,8 +35,8 @@ const getFormDefinitions = async () => {
  * @throws If no workflow definition or form definition is found for the specified workflowDefId and state
  */
 const getCurrentFormForWorkflowDefId = async (
-	workflowDefId: number,
-	state?: string,
+	workflowDefId: WorkflowDefinitionsSelect["id"],
+	state?: FormDefinitionsSelect["state"],
 ) => {
 	// If no state is provided, use the first state in the workflow definition
 	const initialStateExpr = sql`
@@ -48,7 +50,7 @@ const getCurrentFormForWorkflowDefId = async (
 	const stateOrNull = state || null;
 	const statesJoinExpr = sql`Coalesce(${stateOrNull}, ${initialStateExpr})`;
 
-	const [result] = await dbClient
+	const [currentFormForWorkflowDef] = await dbClient
 		.select({
 			workflowDefId: workflowDefinitions.id,
 			workflowDefName: workflowDefinitions.name,
@@ -80,33 +82,36 @@ const getCurrentFormForWorkflowDefId = async (
 		.orderBy(desc(formDefinitions.version))
 		.limit(1);
 
-	if (!result) {
+	if (!currentFormForWorkflowDef) {
 		setResponseStatus(404);
 		throw new Error(
 			`No Workflow Definition found for workflowDefId: ${workflowDefId}`,
 		);
 	}
 
-	if (!result.states || result.states.length === 0) {
+	if (
+		!currentFormForWorkflowDef.states ||
+		currentFormForWorkflowDef.states.length === 0
+	) {
 		setResponseStatus(404);
-		throw new Error(`Invalid States: ${result.states}`);
+		throw new Error(`Invalid States: ${currentFormForWorkflowDef.states}`);
 	}
 
-	if (result.state === null) {
+	if (currentFormForWorkflowDef.state === null) {
 		setResponseStatus(404);
 		throw new Error(`Invalid State: ${state}`);
 	}
 
-	return result || null;
+	return currentFormForWorkflowDef || null;
 };
 
 // Helper: Migrate compatible form data versions to new form definition
 const migrateCompatibleFormDataVersions = async (
 	tx: DbTransaction,
-	workflowDefId: number,
-	state: string,
+	workflowDefId: WorkflowDefinitionsSelect["id"],
+	state: FormDefinitionsSelect["state"],
 	schema: FormSchema,
-	newFormDefId: number,
+	newFormDefId: FormDefinitionsSelect["id"],
 ) => {
 	const matchingInstances = await tx
 		.select({
@@ -172,8 +177,8 @@ const migrateCompatibleFormDataVersions = async (
  * @returns The ID of the newly created form definition record
  */
 const createFormVersion = async (
-	workflowDefId: number,
-	state: string,
+	workflowDefId: WorkflowDefinitionsSelect["id"],
+	state: FormDefinitionsSelect["state"],
 	schema: FormSchema,
 ) => {
 	const [currentVersion] = await dbClient
@@ -261,26 +266,26 @@ const createFormVersion = async (
  * @returns The schema object associated with the specified form definition
  * @throws If no form definition with the given ID is found
  */
-const getFormSchemaById = async (formDefId: number) => {
-	const formDefinition = await dbClient
+const getFormDefinitionById = async (formDefId: FormDefinitionsSelect["id"]) => {
+	const [formDefinition] = await dbClient
 		.select()
 		.from(formDefinitions)
 		.where(eq(formDefinitions.id, formDefId))
 		.limit(1);
 
-	if (!formDefinition.length) {
+	if (!formDefinition) {
 		setResponseStatus(404);
 		throw new Error(`Form definition with id ${formDefId} not found`);
 	}
 
-	return formDefinition[0].schema;
+	return formDefinition;
 };
 
 export const formDefinition = {
 	queries: {
 		getFormDefinitions,
 		getCurrentFormForWorkflowDefId,
-		getFormSchemaById,
+		getFormDefinitionById,
 	},
 	mutations: {
 		migrateCompatibleFormDataVersions,

@@ -196,7 +196,7 @@ describe("DB.formDefinition", () => {
 		expect(implicit?.state).toBe("form1");
 	});
 
-	it("getFormSchemaById: returns schema; throws for missing id", async () => {
+	it("getFormDefinitionById: returns schema; throws for missing id", async () => {
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
 			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
@@ -219,11 +219,12 @@ describe("DB.formDefinition", () => {
 			updatedBy: "system",
 		});
 
-		const s = await DB.formDefinition.queries.getFormSchemaById(formDefId);
-		expect(s).toEqual(formSchemaV1);
+		const formDefinition =
+			await DB.formDefinition.queries.getFormDefinitionById(formDefId);
+		expect(formDefinition.schema).toEqual(formSchemaV1);
 
 		await expect(
-			DB.formDefinition.queries.getFormSchemaById(123456),
+			DB.formDefinition.queries.getFormDefinitionById(123456),
 		).rejects.toThrow(/Form definition with id 123456 not found/);
 		expect(setResponseStatus).toHaveBeenCalledWith(404);
 	});
