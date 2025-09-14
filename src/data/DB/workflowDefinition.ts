@@ -1,6 +1,9 @@
 import { desc, eq } from "drizzle-orm";
 import { dbClient } from "@/db/client";
-import { workflowDefinitions } from "@/db/schema";
+import {
+	type WorkflowDefinitionsSelect,
+	workflowDefinitions,
+} from "@/db/schema";
 
 /**
  * Retrieves up to five workflow definitions from the database, ordered by creation date in descending order.
@@ -21,18 +24,18 @@ const getWorkflowDefinitions = async () => {
  * @returns The workflow definition matching the given ID
  * @throws Error if no workflow definition with the specified ID is found
  */
-const getWorkflowDefinition = async (id: number) => {
-	const workflows = await dbClient
+const getWorkflowDefinition = async (id: WorkflowDefinitionsSelect["id"]) => {
+	const [workflowDefinition] = await dbClient
 		.select()
 		.from(workflowDefinitions)
 		.where(eq(workflowDefinitions.id, id))
 		.limit(1);
 
-	if (!workflows.length) {
+	if (!workflowDefinition) {
 		throw new Error("Workflow not found");
 	}
 
-	return workflows[0];
+	return workflowDefinition;
 };
 
 export const workflowDefinition = {

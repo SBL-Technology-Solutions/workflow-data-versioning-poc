@@ -29,6 +29,20 @@
       "when": 1752380801798,
       "tag": "0003_serial-to-int-fks",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1757219020346,
+      "tag": "0004_workflow_config",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1757219611126,
+      "tag": "0005_data_index",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { workflowDefinitions } from "@/db/schema";
-import { cleanupTestDb, setupTestDb, truncateAllTables, type TestDbContext } from "./testDb";
+import {
+	cleanupTestDb,
+	setupTestDb,
+	type TestDbContext,
+	truncateAllTables,
+} from "./testDb";
 
 describe("DB.workflowDefinition", () => {
 	let ctx: TestDbContext;
@@ -38,12 +43,14 @@ describe("DB.workflowDefinition", () => {
 			version: 1,
 			machineConfig,
 			createdAt: new Date("2025-01-01T00:00:00.000Z"),
+			createdBy: "system",
 		});
 		await db.insert(workflowDefinitions).values({
 			name: "WF B",
 			version: 2,
 			machineConfig,
 			createdAt: new Date("2025-01-02T00:00:00.000Z"),
+			createdBy: "system",
 		});
 
 		const rows = await DB.workflowDefinition.queries.getWorkflowDefinitions();
@@ -56,7 +63,7 @@ describe("DB.workflowDefinition", () => {
 	it("getWorkflowDefinition: returns a workflow by id with states", async () => {
 		const [{ id }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
 		const wf = await DB.workflowDefinition.queries.getWorkflowDefinition(id);
@@ -74,4 +81,3 @@ describe("DB.workflowDefinition", () => {
 		).rejects.toThrow(/Workflow not found/);
 	});
 });
-

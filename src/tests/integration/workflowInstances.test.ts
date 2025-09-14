@@ -12,9 +12,11 @@ import {
 	formDataVersions,
 	formDefinitions,
 	workflowDefinitions,
+	workflowDefinitionsFormDefinitionsMap,
 	workflowInstances,
 } from "@/db/schema";
 import type { FormSchema } from "@/lib/form";
+import { setupTestDb } from "./testDb";
 
 // Mock server-only helper to avoid HTTPEvent errors in tests when DB layer calls it
 vi.mock("@tanstack/react-start/server", () => ({
@@ -24,6 +26,7 @@ vi.mock("@tanstack/react-start/server", () => ({
 describe("DB.workflowInstance", () => {
 	let ctx: import("./testDb").TestDbContext;
 	let db: ReturnType<typeof import("drizzle-orm/node-postgres")["drizzle"]>;
+	let DB: typeof import("@/data/DB")["DB"];
 
 	const machineConfig = {
 		initial: "form1",
@@ -49,9 +52,9 @@ describe("DB.workflowInstance", () => {
 	};
 
 	beforeAll(async () => {
-		const { setupTestDb } = await import("./testDb");
 		ctx = await setupTestDb();
 		db = ctx.db;
+		({ DB } = await import("@/data/DB"));
 	});
 
 	afterAll(async () => {
@@ -71,19 +74,21 @@ describe("DB.workflowInstance", () => {
 
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
 		await db.insert(workflowInstances).values({
 			workflowDefId,
 			currentState: "form1",
-			status: "active",
+			createdBy: "system",
+			updatedBy: "system",
 			createdAt: new Date("2025-01-01T00:00:00.000Z"),
 		});
 		await db.insert(workflowInstances).values({
 			workflowDefId,
 			currentState: "form1",
-			status: "active",
+			createdBy: "system",
+			updatedBy: "system",
 			createdAt: new Date("2025-01-02T00:00:00.000Z"),
 		});
 
@@ -97,12 +102,17 @@ describe("DB.workflowInstance", () => {
 	it("getWorkflowInstanceById: returns instance with machine config", async () => {
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
 		const [{ id: instanceId }] = await db
 			.insert(workflowInstances)
-			.values({ workflowDefId, currentState: "form1", status: "active" })
+			.values({
+				workflowDefId,
+				currentState: "form1",
+				createdBy: "system",
+				updatedBy: "system",
+			})
 			.returning();
 
 		const { DB } = await import("@/data/DB");
@@ -116,7 +126,6 @@ describe("DB.workflowInstance", () => {
 	});
 
 	it("getWorkflowInstanceById: throws for missing instance", async () => {
-		const { DB } = await import("@/data/DB");
 		await expect(
 			DB.workflowInstance.queries.getWorkflowInstanceById(9999),
 		).rejects.toThrow(/Workflow instance not found/);
@@ -125,16 +134,16 @@ describe("DB.workflowInstance", () => {
 	it("createWorkflowInstance: happy path", async () => {
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
-		const { DB } = await import("@/data/DB");
 		const created =
 			await DB.workflowInstance.mutations.createWorkflowInstance(workflowDefId);
 
 		expect(created.workflowDefId).toBe(workflowDefId);
 		expect(created.currentState).toBe("form1");
-		expect(created.status).toBe("active");
+		expect(created.createdBy).toBe("system");
+		expect(created.updatedBy).toBe("system");
 	});
 
 	it("createWorkflowInstance: falls back to first state when initial is missing", async () => {
@@ -151,10 +160,10 @@ describe("DB.workflowInstance", () => {
 				name: "WF2",
 				version: 1,
 				machineConfig: machineConfigNoInitial,
+				createdBy: "system",
 			})
 			.returning();
 
-		const { DB } = await import("@/data/DB");
 		const created =
 			await DB.workflowInstance.mutations.createWorkflowInstance(workflowDefId);
 
@@ -164,29 +173,43 @@ describe("DB.workflowInstance", () => {
 	it("sendWorkflowEvent: saves data and progresses state on valid input", async () => {
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
 		const [{ id: formDef1 }] = await db
 			.insert(formDefinitions)
 			.values({
-				workflowDefId,
 				state: "form1",
 				version: 1,
 				schema: formSchemaV1,
+				createdBy: "system",
 			})
 			.returning();
-		await db
+		const [{ id: formDef2 }] = await db
 			.insert(formDefinitions)
 			.values({
-				workflowDefId,
 				state: "form2",
 				version: 1,
 				schema: formSchemaV2,
+				createdBy: "system",
 			})
 			.returning();
 
-		const { DB } = await import("@/data/DB");
+		await db.insert(workflowDefinitionsFormDefinitionsMap).values([
+			{
+				workflowDefinitionId: workflowDefId,
+				formDefinitionId: formDef1,
+				createdBy: "system",
+				updatedBy: "system",
+			},
+			{
+				workflowDefinitionId: workflowDefId,
+				formDefinitionId: formDef2,
+				createdBy: "system",
+				updatedBy: "system",
+			},
+		]);
+
 		const created =
 			await DB.workflowInstance.mutations.createWorkflowInstance(workflowDefId);
 
@@ -212,20 +235,25 @@ describe("DB.workflowInstance", () => {
 	it("sendWorkflowEvent: saves partial data then rejects invalid input", async () => {
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
 		const [{ id: formDef1 }] = await db
 			.insert(formDefinitions)
 			.values({
-				workflowDefId,
 				state: "form1",
 				version: 1,
 				schema: formSchemaV1,
+				createdBy: "system",
 			})
 			.returning();
+		await db.insert(workflowDefinitionsFormDefinitionsMap).values({
+			workflowDefinitionId: workflowDefId,
+			formDefinitionId: formDef1,
+			createdBy: "system",
+			updatedBy: "system",
+		});
 
-		const { DB } = await import("@/data/DB");
 		const created =
 			await DB.workflowInstance.mutations.createWorkflowInstance(workflowDefId);
 
@@ -250,29 +278,43 @@ describe("DB.workflowInstance", () => {
 	it("sendWorkflowEvent: throws when workflow does not progress", async () => {
 		const [{ id: workflowDefId }] = await db
 			.insert(workflowDefinitions)
-			.values({ name: "WF", version: 1, machineConfig })
+			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
 		const [{ id: formDef1 }] = await db
 			.insert(formDefinitions)
 			.values({
-				workflowDefId,
 				state: "form1",
 				version: 1,
 				schema: formSchemaV1,
+				createdBy: "system",
 			})
 			.returning();
 		const [{ id: formDef2 }] = await db
 			.insert(formDefinitions)
 			.values({
-				workflowDefId,
 				state: "form2",
 				version: 1,
 				schema: formSchemaV2,
+				createdBy: "system",
 			})
 			.returning();
 
-		const { DB } = await import("@/data/DB");
+		await db.insert(workflowDefinitionsFormDefinitionsMap).values([
+			{
+				workflowDefinitionId: workflowDefId,
+				formDefinitionId: formDef1,
+				createdBy: "system",
+				updatedBy: "system",
+			},
+			{
+				workflowDefinitionId: workflowDefId,
+				formDefinitionId: formDef2,
+				createdBy: "system",
+				updatedBy: "system",
+			},
+		]);
+
 		const created =
 			await DB.workflowInstance.mutations.createWorkflowInstance(workflowDefId);
 
@@ -291,5 +333,57 @@ describe("DB.workflowInstance", () => {
 				{ firstName: "Alice" },
 			),
 		).rejects.toThrow(/did not progress/);
+	});
+
+	it("sendWorkflowEvent: handles actor send errors but preserves saved data", async () => {
+		// Arrange workflow + forms
+		const [{ id: workflowDefId }] = await db
+			.insert(workflowDefinitions)
+			.values({
+				name: "WF_ERR",
+				version: 1,
+				machineConfig,
+				createdBy: "system",
+			})
+			.returning();
+
+		const [{ id: formDef1 }] = await db
+			.insert(formDefinitions)
+			.values({
+				state: "form1",
+				version: 1,
+				schema: formSchemaV1,
+				createdBy: "system",
+			})
+			.returning();
+
+		await db.insert(workflowDefinitionsFormDefinitionsMap).values({
+			workflowDefinitionId: workflowDefId,
+			formDefinitionId: formDef1,
+			createdBy: "system",
+			updatedBy: "system",
+		});
+
+		const created =
+			await DB.workflowInstance.mutations.createWorkflowInstance(workflowDefId);
+
+		// Act + Assert: Use invalid event to trigger error
+		await expect(
+			DB.workflowInstance.mutations.sendWorkflowEvent(
+				created.id,
+				formDef1,
+				"INVALID_EVENT", // This will cause the workflow to fail
+				{ firstName: "Alice" },
+			),
+		).rejects.toThrow();
+
+		// Assert: form data was still saved before the failure
+		const saved = await db
+			.select()
+			.from(formDataVersions)
+			.where(eq(formDataVersions.workflowInstanceId, created.id));
+		expect(saved).toHaveLength(1);
+		expect(saved[0].data).toEqual({ firstName: "Alice" });
+		expect(saved[0].version).toBe(1);
 	});
 });

@@ -61,7 +61,7 @@ type FieldToZod<F extends FormFieldSchema> = F["type"] extends
 				? z.ZodArray<z.ZodString>
 				: z.ZodTypeAny;
 
-type FormValues<T extends FormSchema> = {
+export type FormValues<T extends FormSchema> = {
 	[F in T["fields"][number] as F["name"]]: F["type"] extends "text" | "textarea"
 		? string
 		: F["type"] extends "number"
