@@ -1,4 +1,9 @@
 import { __unsafe_getAllOwnEventDescriptors, createMachine } from "xstate";
+import type { WorkflowInstancesSelect } from "@/db/schema";
+import {
+	type SerializableWorkflowMachineConfig,
+	toMachineConfig,
+} from "@/types/workflow";
 
 /**
  * Gets the current workflow state information including resolved state and available events
@@ -7,16 +12,21 @@ import { __unsafe_getAllOwnEventDescriptors, createMachine } from "xstate";
  * @returns An array of next events
  */
 export const getNextEvents = (
-	machineConfig: Record<string, unknown>,
-	currentState: string,
+	machineConfig: SerializableWorkflowMachineConfig,
+	currentState: WorkflowInstancesSelect["currentState"],
 ): string[] => {
-	const workflowMachine = createMachine(machineConfig);
+	try {
+		const workflowMachine = createMachine(toMachineConfig(machineConfig));
 
-	const resolvedState = workflowMachine.resolveState({
-		value: currentState,
-	});
+		const resolvedState = workflowMachine.resolveState({
+			value: currentState,
+		});
 
-	const nextEvents = __unsafe_getAllOwnEventDescriptors(resolvedState);
+		const nextEvents = __unsafe_getAllOwnEventDescriptors(resolvedState);
 
-	return nextEvents;
+		return nextEvents;
+	} catch (error) {
+		console.error(error);
+		return [];
+	}
 };

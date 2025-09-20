@@ -13,6 +13,7 @@ import {
 	workflowInstancesSelectSchema,
 } from "@/db/schema";
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
+import { toMachineConfig } from "@/types/workflow";
 
 /**
  * Retrieves all workflow instances ordered by creation date in descending order.
@@ -140,7 +141,9 @@ const sendWorkflowEvent = async (
 	}
 
 	// create the xstate actor based on the machine config and the current state
-	const workflowMachine = createMachine(workflowInstance.machineConfig);
+	const workflowMachine = createMachine(
+		toMachineConfig(workflowInstance.machineConfig),
+	);
 	const resolvedState = workflowMachine.resolveState({
 		value: workflowInstance.currentState,
 	});
@@ -154,39 +157,37 @@ const sendWorkflowEvent = async (
 	// send the event to the actor with error handling
 	try {
 		restoredActor.send({ type: event });
+		// get the current state
+		const persistedSnapshot =
+			restoredActor.getPersistedSnapshot() as Snapshot<unknown> & {
+				value: string;
+			};
+		const updatedState = persistedSnapshot.value;
+
+		if (workflowInstance.currentState === updatedState) {
+			throw new Error("The workflow did not progress forward");
+		}
+
+		// persist the updated state to the db
+		const [updatedWorkflowInstance] = await dbClient
+			.update(workflowInstances)
+			.set({
+				currentState: updatedState,
+				updatedAt: new Date(),
+			})
+			.where(eq(workflowInstances.id, instanceId))
+			.returning();
+
+		return updatedWorkflowInstance;
 	} catch (err) {
-		// ensure we stop the actor if sending fails
-		restoredActor.stop();
 		setResponseStatus(400);
 		const message = err instanceof Error ? err.message : String(err);
 		throw new Error(
 			`Failed to process event "${event}" from state "${workflowInstance.currentState}": ${message}`,
 		);
+	} finally {
+		restoredActor.stop();
 	}
-
-	// get the current state
-	const persistedSnapshot =
-		restoredActor.getPersistedSnapshot() as Snapshot<unknown> & {
-			value: string;
-		};
-	const updatedState = persistedSnapshot.value;
-
-	if (workflowInstance.currentState === updatedState) {
-		throw new Error("The workflow did not progress forward");
-	}
-
-	// persist the updated state to the db
-	const [updatedWorkflowInstance] = await dbClient
-		.update(workflowInstances)
-		.set({
-			currentState: updatedState,
-			updatedAt: new Date(),
-		})
-		.where(eq(workflowInstances.id, instanceId))
-		.returning();
-
-	restoredActor.stop();
-	return updatedWorkflowInstance;
 };
 
 export const workflowInstance = {

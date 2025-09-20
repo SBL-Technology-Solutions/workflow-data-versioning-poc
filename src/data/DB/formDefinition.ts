@@ -56,7 +56,9 @@ const getCurrentFormForWorkflowDefId = async (
 			workflowDefName: workflowDefinitions.name,
 			states: workflowDefinitions.states,
 			state: formDefinitions.state,
-			formDefId: formDefinitions.id,
+			formDefId: sql<FormDefinitionsSelect["id"]>`${formDefinitions.id}`.as(
+				"formDefId",
+			),
 			schema: formDefinitions.schema,
 			version: formDefinitions.version,
 		})
@@ -79,7 +81,7 @@ const getCurrentFormForWorkflowDefId = async (
 			),
 		)
 		.where(eq(workflowDefinitions.id, workflowDefId))
-		.orderBy(desc(formDefinitions.version))
+		.orderBy(sql`${formDefinitions.version} DESC NULLS LAST`)
 		.limit(1);
 
 	if (!currentFormForWorkflowDef) {
@@ -266,7 +268,9 @@ const createFormVersion = async (
  * @returns The schema object associated with the specified form definition
  * @throws If no form definition with the given ID is found
  */
-const getFormDefinitionById = async (formDefId: FormDefinitionsSelect["id"]) => {
+const getFormDefinitionById = async (
+	formDefId: FormDefinitionsSelect["id"],
+) => {
 	const [formDefinition] = await dbClient
 		.select()
 		.from(formDefinitions)

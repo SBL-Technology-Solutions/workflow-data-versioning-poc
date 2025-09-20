@@ -9,6 +9,7 @@ import {
 	makeInitialValues,
 } from "@/lib/form";
 import { getNextEvents } from "@/lib/workflow";
+import type { SerializableWorkflowMachineConfig } from "@/types/workflow";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { useAppForm } from "./ui/tanstack-form";
@@ -20,8 +21,7 @@ interface DynamicFormProps {
 	workflowInstanceId: number;
 	state: string;
 	formDefId: number;
-	//TODO: improve this typing
-	machineConfig: Record<string, unknown>;
+	machineConfig: SerializableWorkflowMachineConfig;
 }
 
 const defaultSubmitMeta: { event: string | null } = {
