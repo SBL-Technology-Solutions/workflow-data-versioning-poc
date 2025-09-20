@@ -4,13 +4,13 @@ import type { SerializableWorkflowMachineConfig } from "@/types/workflow";
 import { dbClient } from "./client";
 import * as schema from "./schema";
 
-export const approvalWorkflowDefinitionMachineConfig: SerializableWorkflowMachineConfig = {
+export const approvalWorkflowDefinitionMachineConfig = {
 	initial: "draft",
 	states: {
 		draft: { on: { Submit: "approved" } },
 		approved: { type: "final" },
 	},
-};
+} as const satisfies SerializableWorkflowMachineConfig;
 
 export const approvalWorkflowDefinition: schema.WorkflowDefinitionsInsert = {
 	name: "Approval Workflow",

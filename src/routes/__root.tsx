@@ -78,9 +78,6 @@ function RootComponent() {
 	const [showSplash, setShowSplash] = useState(true);
 
 	useEffect(() => {
-		if (typeof window === "undefined") {
-			return;
-		}
 		const value = window.sessionStorage.getItem("showSplash");
 		if (value === "false") {
 			setShowSplash(false);

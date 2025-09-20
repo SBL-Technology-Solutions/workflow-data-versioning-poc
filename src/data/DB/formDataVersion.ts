@@ -7,6 +7,7 @@ import {
 	type FormDefinitionsSelect,
 	formDataVersions,
 	formDefinitions,
+	type WorkflowDefinitionsSelect,
 	type WorkflowInstancesSelect,
 	workflowDefinitions,
 	workflowDefinitionsFormDefinitionsMap,
@@ -43,12 +44,14 @@ const getCurrentFormDataForWorkflowInstance = async (
 			workflowInstanceId: workflowInstances.id,
 			workflowInstanceCurrentState: workflowInstances.currentState,
 			workflowInstanceState: providedStateOrCurrentState,
-			workflowDefinitionId: sql`${workflowDefinitions.id}`.as(
-				"workflowDefinitionId",
-			),
+			workflowDefinitionId: sql<
+				WorkflowDefinitionsSelect["id"]
+			>`${workflowDefinitions.id}`.as("workflowDefinitionId"),
 			workflowDefinitionStates: workflowDefinitions.states,
 			workflowDefinitionMachineConfig: workflowDefinitions.machineConfig,
-			formDefinitionId: sql`${formDefinitions.id}`.as("formDefinitionId"),
+			formDefinitionId: sql<
+				FormDefinitionsSelect["id"]
+			>`${formDefinitions.id}`.as("formDefinitionId"),
 			formDefinitionSchema: formDefinitions.schema,
 			data: formDataVersions.data,
 			dataVersion: formDataVersions.version,
