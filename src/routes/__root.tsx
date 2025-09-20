@@ -1,12 +1,14 @@
+import { TanStackDevtools } from "@tanstack/react-devtools";
+import { FormDevtoolsPlugin } from "@tanstack/react-form-devtools";
 import type { QueryClient } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import {
 	createRootRouteWithContext,
 	HeadContent,
 	Outlet,
 	Scripts,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { type ReactNode, useEffect, useState } from "react";
 import { DefaultCatchBoundary } from "@/components/DefaultCatchBoundary";
 import Header from "@/components/Header";
@@ -95,8 +97,13 @@ function RootComponent() {
 			{!showSplash && <Header />}
 			{!showSplash && <Outlet />}
 			{!showSplash && <Toaster />}
-			<TanStackRouterDevtools position="bottom-left" />
-			<ReactQueryDevtools buttonPosition="bottom-right" />
+			<TanStackDevtools
+				plugins={[
+					FormDevtoolsPlugin(),
+					{ name: "TanStack Router", render: <TanStackRouterDevtoolsPanel /> },
+					{ name: "TanStack Query", render: <ReactQueryDevtoolsPanel /> },
+				]}
+			/>
 		</RootDocument>
 	);
 }
