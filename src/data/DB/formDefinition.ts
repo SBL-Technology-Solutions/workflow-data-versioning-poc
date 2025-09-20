@@ -78,6 +78,7 @@ const getCurrentFormForWorkflowDefId = async (
 				eq(formDefinitions.state, statesJoinExpr),
 			),
 		)
+		.where(eq(workflowDefinitions.id, workflowDefId))
 		.orderBy(sql`${formDefinitions.version} DESC NULLS LAST`)
 		.limit(1);
 
