@@ -6,7 +6,10 @@ export default function Header() {
 		<header className="px-4 py-1 flex gap-2 bg-background border-b border-border justify-between items-center">
 			<nav className="flex flex-row">
 				<div className="px-2 font-bold">
-					<Link to="/" className="text-foreground hover:text-foreground/80 transition-colors">
+					<Link
+						to="/"
+						className="text-foreground hover:text-foreground/80 transition-colors"
+					>
 						Home
 					</Link>
 				</div>

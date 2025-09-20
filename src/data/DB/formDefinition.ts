@@ -266,7 +266,9 @@ const createFormVersion = async (
  * @returns The schema object associated with the specified form definition
  * @throws If no form definition with the given ID is found
  */
-const getFormDefinitionById = async (formDefId: FormDefinitionsSelect["id"]) => {
+const getFormDefinitionById = async (
+	formDefId: FormDefinitionsSelect["id"],
+) => {
 	const [formDefinition] = await dbClient
 		.select()
 		.from(formDefinitions)

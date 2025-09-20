@@ -7,14 +7,13 @@ import {
 	Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-
+import { type ReactNode, useState } from "react";
 import { DefaultCatchBoundary } from "@/components/DefaultCatchBoundary";
 import Header from "@/components/Header";
 import { NotFound } from "@/components/NotFound";
+import { SplashScreen } from "@/components/SplashScreen";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "@/styles/app.css?url";
-import { useEffect, useState, type ReactNode } from "react";
-import { SplashScreen } from "@/components/SplashScreen";
 
 interface MyRouterContext {
 	queryClient: QueryClient;
@@ -77,9 +76,9 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 function RootComponent() {
 	const [showSplash, setShowSplash] = useState(() => {
-		if (typeof window == "undefined") {
-            return true;
-        }
+		if (typeof window === "undefined") {
+			return true;
+		}
 
 		// Show splash if not set or explicitly set to 'true'
 		const value = sessionStorage.getItem("showSplash");

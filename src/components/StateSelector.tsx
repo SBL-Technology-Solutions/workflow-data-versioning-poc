@@ -2,9 +2,9 @@ import {
 	Select,
 	SelectContent,
 	SelectItem,
+	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { SelectTrigger } from "@/components/ui/select";
 
 interface StateSelectorProps {
 	states: string[];
