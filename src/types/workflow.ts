@@ -1,7 +1,42 @@
-import type { EventObject, MachineConfig, MachineContext } from "xstate";
+import type {
+	EventObject,
+	MachineConfig,
+	MachineContext,
+	SingleOrArray,
+	StateNodeConfig,
+	TransitionTarget,
+} from "xstate";
 
-export type XStateMachineConfig = MachineConfig<
-	MachineContext, // Context type
-	EventObject // Event type
-	// We omit the other generic parameters to use defaults
+type AnyStateNodeConfig = StateNodeConfig<
+	MachineContext,
+	EventObject,
+	any,
+	any,
+	any,
+	string,
+	string,
+	unknown,
+	EventObject,
+	any
 >;
+
+type SerializableStateType = NonNullable<AnyStateNodeConfig["type"]>;
+
+type SerializableTransition = TransitionTarget | { target: TransitionTarget };
+
+export type SerializableStateNode = {
+	type?: SerializableStateType;
+	on?: Record<string, SingleOrArray<SerializableTransition>>;
+	always?: SingleOrArray<SerializableTransition>;
+	states?: Record<string, SerializableStateNode>;
+};
+
+export type SerializableWorkflowMachineConfig = {
+	initial?: string;
+	states: Record<string, SerializableStateNode>;
+};
+
+export const toMachineConfig = (
+	config: SerializableWorkflowMachineConfig,
+): MachineConfig<MachineContext, EventObject> =>
+	config as unknown as MachineConfig<MachineContext, EventObject>;

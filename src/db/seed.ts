@@ -1,10 +1,10 @@
 import { reset } from "drizzle-seed";
 import type { FormSchema } from "@/lib/form";
-import type { XStateMachineConfig } from "@/types/workflow";
+import type { SerializableWorkflowMachineConfig } from "@/types/workflow";
 import { dbClient } from "./client";
 import * as schema from "./schema";
 
-export const approvalWorkflowDefinitionMachineConfig: XStateMachineConfig = {
+export const approvalWorkflowDefinitionMachineConfig: SerializableWorkflowMachineConfig = {
 	initial: "draft",
 	states: {
 		draft: { on: { Submit: "approved" } },

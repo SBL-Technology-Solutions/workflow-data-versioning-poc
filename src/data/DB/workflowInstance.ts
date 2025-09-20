@@ -13,6 +13,7 @@ import {
 	workflowInstancesSelectSchema,
 } from "@/db/schema";
 import { ConvertToZodSchemaAndValidate, formatZodErrors } from "@/lib/form";
+import { toMachineConfig } from "@/types/workflow";
 
 /**
  * Retrieves all workflow instances ordered by creation date in descending order.
@@ -140,7 +141,9 @@ const sendWorkflowEvent = async (
 	}
 
 	// create the xstate actor based on the machine config and the current state
-	const workflowMachine = createMachine(workflowInstance.machineConfig);
+	const workflowMachine = createMachine(
+		toMachineConfig(workflowInstance.machineConfig),
+	);
 	const resolvedState = workflowMachine.resolveState({
 		value: workflowInstance.currentState,
 	});

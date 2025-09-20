@@ -16,7 +16,7 @@ import { createSchemaFactory } from "drizzle-zod";
 import { z } from "zod";
 import type { FormSchema, FormValues } from "@/lib/form";
 import type { JSONPatch } from "@/lib/jsonPatch";
-import type { XStateMachineConfig } from "@/types/workflow";
+import type { SerializableWorkflowMachineConfig } from "@/types/workflow";
 
 const { createInsertSchema, createSelectSchema, createUpdateSchema } =
 	createSchemaFactory({ zodInstance: z });
@@ -53,7 +53,7 @@ export const workflowDefinitions = pgTable(
 		id: integer().primaryKey().generatedAlwaysAsIdentity(),
 		name: varchar().notNull(),
 		version: integer().notNull(),
-		machineConfig: jsonb().$type<XStateMachineConfig>().notNull(),
+		machineConfig: jsonb().$type<SerializableWorkflowMachineConfig>().notNull(),
 		states: text()
 			.array()
 			.generatedAlwaysAs(() => sql`states_keys(machine_config->'states')`),

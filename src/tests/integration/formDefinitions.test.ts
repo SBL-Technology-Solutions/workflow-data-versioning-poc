@@ -16,7 +16,7 @@ import {
 	workflowInstances,
 } from "@/db/schema";
 import type { FormSchema } from "@/lib/form";
-import type { XStateMachineConfig } from "@/types/workflow";
+import type { SerializableWorkflowMachineConfig } from "@/types/workflow";
 import {
 	cleanupTestDb,
 	setupTestDb,
@@ -33,7 +33,7 @@ describe("DB.formDefinition", () => {
 	let db: ReturnType<typeof import("drizzle-orm/node-postgres")["drizzle"]>;
 	let DB: typeof import("@/data/DB")["DB"];
 
-	const machineConfig: XStateMachineConfig = {
+	const machineConfig: SerializableWorkflowMachineConfig = {
 		initial: "form1",
 		states: {
 			form1: { on: { NEXT: "form2" } },
@@ -79,20 +79,41 @@ describe("DB.formDefinition", () => {
 			.values({ name: "WF", version: 1, machineConfig, createdBy: "system" })
 			.returning();
 
-		await db.insert(formDefinitions).values({
-			state: "form1",
-			version: 1,
-			schema: formSchemaV1,
-			createdAt: new Date("2025-01-01T00:00:00.000Z"),
-			createdBy: "system",
-		});
-		await db.insert(formDefinitions).values({
-			state: "form1",
-			version: 2,
-			schema: formSchemaV2,
-			createdAt: new Date("2025-01-02T00:00:00.000Z"),
-			createdBy: "system",
-		});
+		const [{ id: v1 }] = await db
+			.insert(formDefinitions)
+			.values({
+				state: "form1",
+				version: 1,
+				schema: formSchemaV1,
+				createdAt: new Date("2025-01-01T00:00:00.000Z"),
+				createdBy: "system",
+			})
+			.returning();
+		const [{ id: v2 }] = await db
+			.insert(formDefinitions)
+			.values({
+				state: "form1",
+				version: 2,
+				schema: formSchemaV2,
+				createdAt: new Date("2025-01-02T00:00:00.000Z"),
+				createdBy: "system",
+			})
+			.returning();
+
+		await db.insert(workflowDefinitionsFormDefinitionsMap).values([
+			{
+				workflowDefinitionId: workflowDefId,
+				formDefinitionId: v1,
+				createdBy: "system",
+				updatedBy: "system",
+			},
+			{
+				workflowDefinitionId: workflowDefId,
+				formDefinitionId: v2,
+				createdBy: "system",
+				updatedBy: "system",
+			},
+		]);
 
 		const defs = await DB.formDefinition.queries.getFormDefinitions();
 		expect(defs).toHaveLength(2);
