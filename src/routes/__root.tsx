@@ -7,7 +7,7 @@ import {
 	Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { DefaultCatchBoundary } from "@/components/DefaultCatchBoundary";
 import Header from "@/components/Header";
 import { NotFound } from "@/components/NotFound";
@@ -75,15 +75,17 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 });
 
 function RootComponent() {
-	const [showSplash, setShowSplash] = useState(() => {
-		if (typeof window === "undefined") {
-			return true;
-		}
+	const [showSplash, setShowSplash] = useState(true);
 
-		// Show splash if not set or explicitly set to 'true'
-		const value = sessionStorage.getItem("showSplash");
-		return value === null || value === "true";
-	});
+	useEffect(() => {
+		if (typeof window === "undefined") {
+			return;
+		}
+		const value = window.sessionStorage.getItem("showSplash");
+		if (value === "false") {
+			setShowSplash(false);
+		}
+	}, []);
 
 	const handleDismissSplash = () => {
 		setShowSplash(false);
@@ -95,7 +97,7 @@ function RootComponent() {
 			<SplashScreen show={showSplash} onDismiss={handleDismissSplash} />
 			{!showSplash && <Header />}
 			{!showSplash && <Outlet />}
-			<Toaster />
+			{!showSplash && <Toaster />}
 			<TanStackRouterDevtools position="bottom-left" />
 			<ReactQueryDevtools buttonPosition="bottom-right" />
 		</RootDocument>
