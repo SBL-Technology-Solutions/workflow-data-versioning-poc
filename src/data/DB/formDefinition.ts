@@ -56,9 +56,7 @@ const getCurrentFormForWorkflowDefId = async (
 			workflowDefName: workflowDefinitions.name,
 			states: workflowDefinitions.states,
 			state: formDefinitions.state,
-			formDefId: sql<FormDefinitionsSelect["id"]>`${formDefinitions.id}`.as(
-				"formDefId",
-			),
+			formDefId: formDefinitions.id,
 			schema: formDefinitions.schema,
 			version: formDefinitions.version,
 		})

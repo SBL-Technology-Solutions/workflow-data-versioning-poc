@@ -44,14 +44,10 @@ const getCurrentFormDataForWorkflowInstance = async (
 			workflowInstanceId: workflowInstances.id,
 			workflowInstanceCurrentState: workflowInstances.currentState,
 			workflowInstanceState: providedStateOrCurrentState,
-			workflowDefinitionId: sql<
-				WorkflowDefinitionsSelect["id"]
-			>`${workflowDefinitions.id}`.as("workflowDefinitionId"),
+			workflowDefinitionId: workflowDefinitions.id,
 			workflowDefinitionStates: workflowDefinitions.states,
 			workflowDefinitionMachineConfig: workflowDefinitions.machineConfig,
-			formDefinitionId: sql<
-				FormDefinitionsSelect["id"]
-			>`${formDefinitions.id}`.as("formDefinitionId"),
+			formDefinitionId: formDefinitions.id,
 			formDefinitionSchema: formDefinitions.schema,
 			data: formDataVersions.data,
 			dataVersion: formDataVersions.version,
