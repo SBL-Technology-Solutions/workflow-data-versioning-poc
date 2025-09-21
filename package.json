@@ -33,6 +33,8 @@
 		"@radix-ui/react-slot": "^1.2.3",
 		"@t3-oss/env-core": "^0.13.8",
 		"@tailwindcss/vite": "^4.1.11",
+		"@tanstack/query-db-collection":"^0.2.20",
+		"@tanstack/react-db": "^0.1.21",
 		"@tanstack/react-form": "^1.12.4",
 		"@tanstack/react-query": "^5.81.5",
 		"@tanstack/react-query-devtools": "^5.81.5",

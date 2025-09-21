@@ -35,7 +35,7 @@ const getWorkflowInstanceByIdQueryOptions = (instanceId: number) =>
 		queryFn: () => getWorkflowInstanceByIdServerFn({ data: instanceId }),
 	});
 
-const getWorkflowInstancesServerFn = createServerFn({
+export const getWorkflowInstancesServerFn = createServerFn({
 	method: "GET",
 }).handler(async () => {
 	return DB.workflowInstance.queries.getWorkflowInstances();
