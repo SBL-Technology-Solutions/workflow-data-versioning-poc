@@ -153,7 +153,9 @@ export const DynamicForm = ({
 								id={field.name}
 								value={field.state.value}
 								onChange={(e) => field.handleChange(e.target.value)}
-								onBlur={field.handleBlur}
+								onBlur={() => { 
+									field.handleBlur(); 
+									saveFormData.mutate(form.state.values); }}
 								rows={fieldMeta.rows}
 								placeholder={fieldMeta.description}
 							/>
@@ -164,7 +166,10 @@ export const DynamicForm = ({
 								id={field.name}
 								value={field.state.value}
 								onChange={(e) => field.handleChange(e.target.value)}
-								onBlur={field.handleBlur}
+								onBlur={() => { 
+									field.handleBlur(); 
+									saveFormData.mutate(form.state.values); 
+								}}
 								type={fieldMeta.type}
 								placeholder={fieldMeta.description}
 							/>
@@ -195,15 +200,6 @@ export const DynamicForm = ({
 				<form.Subscribe selector={(state) => state.canSubmit}>
 					{(canSubmit) => (
 						<div className="flex space-x-2">
-							<Button
-								type="button"
-								disabled={saveFormData.isPending}
-								variant="outline"
-								//TODO: This is currently ignoring client side zod validation as its not running through handleSubmit, we should maybe add a handler and have this run the zod validation first and then if it passes, run the mutation or add to handleSubmit
-								onClick={() => saveFormData.mutate(form.state.values)}
-							>
-								{saveFormData.isPending ? "Saving..." : "Save"}
-							</Button>
 							<div className="flex space-x-2">
 								{nextEvents.length === 0
 									? null
