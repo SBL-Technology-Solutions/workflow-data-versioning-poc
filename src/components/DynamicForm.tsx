@@ -38,6 +38,7 @@ export const DynamicForm = ({
 }: DynamicFormProps) => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+
 	const sendWorkflowEvent = useMutation({
 		mutationFn: ({
 			event,
@@ -101,6 +102,12 @@ export const DynamicForm = ({
 		},
 	});
 
+	const triggerAutosave = (values: Record<string, string>) => {
+		if (!saveFormData.isPending) {
+			saveFormData.mutate(values);
+		}
+	};
+
 	const validationSchema = useMemo(
 		() => createZodValidationSchema(schema),
 		[schema],
@@ -152,7 +159,12 @@ export const DynamicForm = ({
 							<Textarea
 								id={field.name}
 								value={field.state.value}
-								onChange={(e) => field.handleChange(e.target.value)}
+								onChange={(e) => {
+									field.handleChange(e.target.value)
+									setTimeout(() => {
+										triggerAutosave(form.state.values);
+									}, 10000);
+								}}
 								onBlur={() => { 
 									field.handleBlur(); 
 									saveFormData.mutate(form.state.values); }}
@@ -165,7 +177,12 @@ export const DynamicForm = ({
 							<Input
 								id={field.name}
 								value={field.state.value}
-								onChange={(e) => field.handleChange(e.target.value)}
+								onChange={(e) => {
+									field.handleChange(e.target.value);
+									setTimeout(() => {
+										triggerAutosave(form.state.values);
+									}, 10000);
+								}}
 								onBlur={() => { 
 									field.handleBlur(); 
 									saveFormData.mutate(form.state.values); 
