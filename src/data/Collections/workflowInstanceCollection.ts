@@ -8,10 +8,7 @@ const queryClient = new QueryClient();
 const workflowInstanceCollection = createCollection(
   queryCollectionOptions({
     queryKey: workflowInstance.queryKeys.all(),
-    queryFn: async () => {
-      const response = await getWorkflowInstancesServerFn()
-      return response;
-    },
+    queryFn: getWorkflowInstancesServerFn,
     queryClient,
     getKey: (workflowInstance) => workflowInstance.id,
   })
