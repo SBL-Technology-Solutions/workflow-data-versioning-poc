@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
-import { useLiveQuery } from "@tanstack/react-db";
 import workflowInstanceCollection from "@/data/Collections/workflowInstanceCollection";
+import { useLiveQuery } from "@tanstack/react-db";
+import { Link } from "@tanstack/react-router";
 
 export function WorkflowInstances() {
 

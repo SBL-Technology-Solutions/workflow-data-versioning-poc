@@ -4,24 +4,24 @@ import { FormSchema as zodFormSchema } from "@/lib/form";
 import { DB } from "../DB";
 
 const formDefinitionQueryKeys = {
-	all: ["formDefinitions"] as const,
-	lists: () => [...formDefinitionQueryKeys.all, "list"] as const,
+	all: () => ["formDefinitions"] as const,
+	lists: () => [...formDefinitionQueryKeys.all(), "list"] as const,
 	list: () => [...formDefinitionQueryKeys.lists()] as const,
-	details: () => [...formDefinitionQueryKeys.all, "detail"] as const,
+	details: () => [...formDefinitionQueryKeys.all(), "detail"] as const,
 	detail: (id: number, otherDetails?: Record<string, any>) =>
 		otherDetails !== undefined
 			? ([...formDefinitionQueryKeys.details(), id, otherDetails] as const)
 			: ([...formDefinitionQueryKeys.details(), id] as const),
 	definitionbyWorkflowInstanceId: (workflowInstanceId: number, state: string) =>
 		[
-			...formDefinitionQueryKeys.all,
+			...formDefinitionQueryKeys.all(),
 			"definitionbyWorkflowInstanceId",
 			workflowInstanceId,
 			state,
 		] as const,
 } as const;
 
-const getFormDefinitions = createServerFn({
+export const getFormDefinitions = createServerFn({
 	method: "GET",
 }).handler(async () => {
 	return DB.formDefinition.queries.getFormDefinitions();

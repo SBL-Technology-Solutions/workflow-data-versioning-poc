@@ -18,7 +18,7 @@ const formDataVersionQueryKeys = {
 			: ([...formDataVersionQueryKeys.details(), workflowInstanceId] as const),
 } as const;
 
-const getFormDataVersions = createServerFn({
+export const getFormDataVersions = createServerFn({
 	method: "GET",
 }).handler(async () => {
 	return DB.formDataVersion.queries.getFormDataVersions();

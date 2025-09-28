@@ -1,15 +1,15 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { API } from "@/data/API";
+import formDataVersionCollection from "@/data/Collections/formDataVersionCollection";
+import { useLiveQuery } from "@tanstack/react-db";
 
 export function FormDataVersions() {
-	const formData = useSuspenseQuery(
-		API.formDataVersion.queries.getFormDataVersionsQueryOptions(),
+	const { data: formDataVersions } = useLiveQuery((q) =>
+		q.from({ formDataVersion: formDataVersionCollection }),
 	);
 
 	return (
 		<section className="mb-8">
 			<h2 className="text-xl font-semibold mb-4">Recent Form Data Versions</h2>
-			{formData.data.map((data) => (
+			{formDataVersions.map((data) => (
 				<div key={data.id} className="mb-4 p-4 border rounded-lg">
 					<div>ID: {data.id}</div>
 					<div>Version: {data.version}</div>

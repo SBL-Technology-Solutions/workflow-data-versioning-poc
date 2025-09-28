@@ -1,10 +1,11 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import workflowDefinitonCollection from "@/data/Collections/workflowDefinitonCollection";
+import { useLiveQuery } from "@tanstack/react-db";
 import { Link } from "@tanstack/react-router";
-import { API } from "@/data/API";
 
 export function WorkflowDefinitions() {
-	const workflowDefinitionsQuery = useSuspenseQuery(
-		API.workflowDefinition.queries.getWorkflowDefinitionsQueryOptions(),
+	
+	const { data: workflowDefinitions } = useLiveQuery((q) =>
+		q.from({ workflowDefinition: workflowDefinitonCollection })
 	);
 
 	return (
@@ -12,7 +13,7 @@ export function WorkflowDefinitions() {
 			<h2 className="text-xl font-semibold mb-4">
 				Recent Workflow Definitions
 			</h2>
-			{workflowDefinitionsQuery.data.map((wf) => (
+			{workflowDefinitions.map((wf) => (
 				<div key={wf.id} className="mb-4 p-4 border rounded-lg">
 					<div>
 						ID:{" "}
