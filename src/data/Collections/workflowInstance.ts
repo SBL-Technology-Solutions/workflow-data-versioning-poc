@@ -6,7 +6,7 @@ import { API } from '../API';
 
 const queryClient = new QueryClient();
 
-const workflowInstance = createCollection(
+const workflowInstanceCollection = createCollection(
   queryCollectionOptions({
     queryKey: API.workflowInstance.queryKeys.all(),
     queryFn: getWorkflowInstancesServerFn,
@@ -15,4 +15,4 @@ const workflowInstance = createCollection(
   })
 )
 
-export default workflowInstance;
+export default workflowInstanceCollection;

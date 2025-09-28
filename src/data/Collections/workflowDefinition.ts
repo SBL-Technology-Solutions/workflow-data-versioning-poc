@@ -6,7 +6,7 @@ import { getWorkflowDefinitionsFn } from '../API/workflowDefinition';
 
 const queryClient = new QueryClient();
 
-const workflowDefiniton = createCollection(
+const workflowDefinitionCollection = createCollection(
   queryCollectionOptions({
     queryKey: API.workflowDefinition.queryKeys.all(),
     queryFn: getWorkflowDefinitionsFn,
@@ -15,4 +15,4 @@ const workflowDefiniton = createCollection(
   })
 )
 
-export default workflowDefiniton;
+export default workflowDefinitionCollection;

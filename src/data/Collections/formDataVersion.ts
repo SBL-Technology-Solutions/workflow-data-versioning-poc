@@ -6,7 +6,7 @@ import { getFormDataVersions } from "../API/formDataVersion";
 
 const queryClient = new QueryClient();
 
-const formDataVersion = createCollection(
+const formDataVersionCollection = createCollection(
   queryCollectionOptions({
     queryKey: API.formDataVersion.queryKeys.all(),
     queryFn: getFormDataVersions,
@@ -15,4 +15,4 @@ const formDataVersion = createCollection(
   })
 );
 
-export default formDataVersion;
+export default formDataVersionCollection;

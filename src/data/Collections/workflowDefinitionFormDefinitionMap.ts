@@ -5,7 +5,7 @@ import { QueryClient } from '@tanstack/react-query';
 
 const queryClient = new QueryClient();
 
-const workflowDefinitionFormDefinitionMap = createCollection(
+const workflowDefinitionFormDefinitionMapCollection = createCollection(
   queryCollectionOptions({
     queryKey: workflowInstance.queryKeys.all(),
     queryFn: getWorkflowInstancesServerFn,
@@ -14,4 +14,4 @@ const workflowDefinitionFormDefinitionMap = createCollection(
   })
 )
 
-export default workflowDefinitionFormDefinitionMap;
+export default workflowDefinitionFormDefinitionMapCollection;

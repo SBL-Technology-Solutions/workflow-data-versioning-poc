@@ -1,11 +1,11 @@
-import { Collection } from "@/data/Collections";
+import workflowInstanceCollection from "@/data/collections/workflowInstance";
 import { useLiveQuery } from "@tanstack/react-db";
 import { Link } from "@tanstack/react-router";
 
 export function WorkflowInstances() {
 
 	const { data: workflowInstances } = useLiveQuery((q) =>
-		q.from({ workflowInstance: Collection.workflowInstance })
+		q.from({ workflowInstance: workflowInstanceCollection })
 	);
 
 	return (
