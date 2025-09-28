@@ -15,14 +15,6 @@ const workflowDefinitionSearchSchema = z.object({
 
 export const Route = createFileRoute("/admin/workflow/$workflowId/forms/")({
 	component: RouteComponent,
-	loaderDeps: ({ search: { state } }) => ({ state }),
-	loader: ({ params, context, deps: { state } }) =>
-		context.queryClient.ensureQueryData(
-			API.formDefinition.queries.getCurrentFormDefinitionByWorkflowDefIdQueryOptions(
-				Number(params.workflowId),
-				state,
-			),
-		),
 	validateSearch: workflowDefinitionSearchSchema,
 });
 

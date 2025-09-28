@@ -6,7 +6,7 @@ import { getFormDefinitions } from "../API/formDefinition";
 
 const queryClient = new QueryClient();
 
-const formDefinitionCollection = createCollection(
+const formDefinition = createCollection(
   queryCollectionOptions({
     queryKey: API.formDefinition.queryKeys.all(),
     queryFn: getFormDefinitions,
@@ -15,4 +15,4 @@ const formDefinitionCollection = createCollection(
   })
 );
 
-export default formDefinitionCollection;
+export default formDefinition;

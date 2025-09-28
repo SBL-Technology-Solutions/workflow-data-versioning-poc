@@ -6,7 +6,7 @@ import {
 } from "@/db/schema";
 
 /**
- * Retrieves up to five workflow definitions from the database, ordered by creation date in descending order.
+ * Retrieves workflow definitions from the database, ordered by creation date in descending order.
  *
  * @returns An array of workflow definition records.
  */
