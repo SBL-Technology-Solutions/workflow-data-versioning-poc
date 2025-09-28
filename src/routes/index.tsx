@@ -11,23 +11,6 @@ import { API } from "@/data/API";
 
 export const Route = createFileRoute("/")({
 	component: Home,
-	loader: async ({ context }) => {
-		return {
-			workflowInstances: context.queryClient.prefetchQuery(
-				API.workflowInstance.queries.getWorkflowInstancesQueryOptions(),
-			),
-			workflowDefinitions: context.queryClient.prefetchQuery(
-				API.workflowDefinition.queries.getWorkflowDefinitionsQueryOptions(),
-			),
-			formDefinitions: context.queryClient.prefetchQuery(
-				API.formDefinition.queries.getFormDefinitionsQueryOptions(),
-			),
-			formData: context.queryClient.prefetchQuery(
-				API.formDataVersion.queries.getFormDataVersionsQueryOptions(),
-			),
-		};
-	},
-	pendingComponent: () => <div>Loading...</div>,
 });
 
 function Home() {
