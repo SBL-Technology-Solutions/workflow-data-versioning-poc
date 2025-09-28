@@ -18,7 +18,7 @@ const WorkflowInstanceIdSchema =
 const getWorkflowInstanceByIdServerFn = createServerFn({
 	method: "GET",
 })
-	.validator(WorkflowInstanceIdSchema)
+	.inputValidator(WorkflowInstanceIdSchema)
 	.handler(async ({ data: workflowInstanceId }) => {
 		return DB.workflowInstance.queries.getWorkflowInstanceById(
 			workflowInstanceId,
@@ -50,7 +50,7 @@ const getWorkflowInstancesQueryOptions = () =>
 const createWorkflowInstanceServerFn = createServerFn({
 	method: "POST",
 })
-	.validator(
+	.inputValidator(
 		z.object({
 			workflowDefId: z.number(),
 		}),
@@ -62,7 +62,7 @@ const createWorkflowInstanceServerFn = createServerFn({
 const sendWorkflowEventServerFn = createServerFn({
 	method: "POST",
 })
-	.validator(
+	.inputValidator(
 		z.object({
 			instanceId: WorkflowInstanceIdSchema,
 			event: z.string(),

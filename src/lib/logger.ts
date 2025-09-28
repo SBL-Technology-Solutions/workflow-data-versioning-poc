@@ -1,15 +1,15 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import pino from "pino";
-import * as z from "zod";
-import { env } from "@/env";
+import { z } from "zod";
+import { serverEnv } from "@/config/env";
 
-const isProd = process.env.NODE_ENV === "production";
+const isProd = createServerOnlyFn(() => process.env.NODE_ENV === "production");
 
-const level = env.LOG_LEVEL ?? (isProd ? "info" : "debug");
+const level = serverEnv.LOG_LEVEL ?? (isProd() ? "info" : "debug");
 
 export const logger = pino({
 	level,
-	transport: isProd
+	transport: isProd()
 		? undefined
 		: {
 				target: "pino-pretty",
@@ -44,13 +44,13 @@ export const logger = pino({
 export const clientLoggerFn = createServerFn({
 	method: "POST",
 })
-	.validator(
+	.inputValidator(
 		z.object({
 			level: z.enum(["error", "warn", "info", "debug", "trace"]),
 			message: z.string(),
 			meta: z.object({}).optional(),
 		}),
 	)
-	.handler(async ({ data: { level, message, meta } }) => {
-		logger[level](`Client: ${message}`, meta);
-	});
+	.handler(async ({ data: { level, message, meta } }) =>
+		logger[level](`Client: ${message}`, meta),
+	);
