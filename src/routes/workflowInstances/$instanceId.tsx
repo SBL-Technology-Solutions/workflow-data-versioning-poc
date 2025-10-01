@@ -4,7 +4,6 @@ import {
 	useNavigate,
 	useSearch,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
 import * as z from "zod";
 import { DynamicForm } from "@/components/DynamicForm";
 import { StateSelector } from "@/components/StateSelector";
@@ -90,7 +89,7 @@ function RouteComponent() {
 		throw new Error("No form definition found for this state");
 	}
 	if (!currentFormData.workflowDefinitionStates) {
-		void clientLoggerFn({
+		clientLoggerFn({
 			data: {
 				level: "error",
 				message: "Missing workflow definition states",
