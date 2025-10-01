@@ -52,5 +52,7 @@ export const clientLoggerFn = createServerFn({
 		}),
 	)
 	.handler(async ({ data: { level, message, meta } }) =>
-		logger[level](`Client: ${message}`, meta),
+		meta
+			? logger[level](meta, `Client: ${message}`)
+			: logger[level](`Client: ${message}`),
 	);
