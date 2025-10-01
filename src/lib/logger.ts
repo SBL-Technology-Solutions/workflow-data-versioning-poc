@@ -1,24 +1,24 @@
 import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
-import pino from "pino";
 import { z } from "zod";
 import { serverEnv } from "@/config/env";
 
-const isProd = createServerOnlyFn(() => process.env.NODE_ENV === "production");
-
-const level = serverEnv.LOG_LEVEL ?? (isProd() ? "info" : "debug");
-
-export const logger = pino({
-	level,
-	transport: isProd()
-		? undefined
-		: {
-				target: "pino-pretty",
-				options: {
-					colorize: true,
-					translateTime: "yyyy-mm-dd HH:MM:ss.l o",
-					ignore: "pid,hostname",
+const getLogger = createServerOnlyFn(async () => {
+	const { default: pino } = await import("pino");
+	const isProd = process.env.NODE_ENV === "production";
+	const level = serverEnv.LOG_LEVEL ?? (isProd ? "info" : "debug");
+	return pino({
+		level,
+		transport: isProd
+			? undefined
+			: {
+					target: "pino-pretty",
+					options: {
+						colorize: true,
+						translateTime: "yyyy-mm-dd HH:MM:ss.l o",
+						ignore: "pid,hostname",
+					},
 				},
-			},
+	});
 });
 
 /**
@@ -48,11 +48,12 @@ export const clientLoggerFn = createServerFn({
 		z.object({
 			level: z.enum(["error", "warn", "info", "debug", "trace"]),
 			message: z.string(),
-			meta: z.object({}).optional(),
+			meta: z.record(z.string(), z.any()).optional(),
 		}),
 	)
-	.handler(async ({ data: { level, message, meta } }) =>
-		meta
+	.handler(async ({ data: { level, message, meta } }) => {
+		const logger = await getLogger();
+		return meta
 			? logger[level](meta, `Client: ${message}`)
-			: logger[level](`Client: ${message}`),
-	);
+			: logger[level](`Client: ${message}`);
+	});
