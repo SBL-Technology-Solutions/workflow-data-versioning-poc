@@ -8,6 +8,7 @@ import {
 	type FormSchema,
 	makeInitialValues,
 } from "@/lib/form";
+import { clientLoggerFn } from "@/lib/logger";
 import { getNextEvents } from "@/lib/workflow";
 import type { SerializableWorkflowMachineConfig } from "@/types/workflow";
 import { Button } from "./ui/button";
@@ -54,7 +55,31 @@ export const DynamicForm = ({
 					formData,
 				},
 			}),
+		onMutate: ({ event }) => {
+			clientLoggerFn({
+				data: {
+					level: "info",
+					message: "Submitting workflow event",
+					meta: {
+						instanceId: workflowInstanceId,
+						formDefId,
+						event,
+					},
+				},
+			});
+		},
 		onSuccess: (result) => {
+			clientLoggerFn({
+				data: {
+					level: "info",
+					message: "Workflow event submitted successfully",
+					meta: {
+						instanceId: workflowInstanceId,
+						formDefId,
+						currentState: result.currentState,
+					},
+				},
+			});
 			toast.success("Event sent successfully");
 			queryClient.invalidateQueries({
 				queryKey: API.formDataVersion.queryKeys.detail(workflowInstanceId, {
@@ -74,6 +99,24 @@ export const DynamicForm = ({
 				},
 			});
 		},
+		onError: (error, variables) => {
+			const message = error instanceof Error ? error.message : "Unknown error";
+			toast.error("Failed to send workflow event", {
+				description: message,
+			});
+			clientLoggerFn({
+				data: {
+					level: "error",
+					message: "Failed to submit workflow event",
+					meta: {
+						instanceId: workflowInstanceId,
+						formDefId,
+						event: variables.event,
+						error: message,
+					},
+				},
+			});
+		},
 	});
 
 	const saveFormData = useMutation({
@@ -85,7 +128,30 @@ export const DynamicForm = ({
 					data,
 				},
 			}),
+		onMutate: (data) => {
+			clientLoggerFn({
+				data: {
+					level: "info",
+					message: "Saving form data",
+					meta: {
+						workflowInstanceId,
+						formDefId,
+						fieldCount: Object.keys(data ?? {}).length,
+					},
+				},
+			});
+		},
 		onSuccess: () => {
+			clientLoggerFn({
+				data: {
+					level: "info",
+					message: "Form data saved",
+					meta: {
+						workflowInstanceId,
+						formDefId,
+					},
+				},
+			});
 			toast.success("Form saved successfully");
 			queryClient.invalidateQueries({
 				queryKey: API.formDataVersion.queryKeys.detail(workflowInstanceId, {
@@ -93,10 +159,22 @@ export const DynamicForm = ({
 				}),
 			});
 		},
-		//TODO: improve rendering of zod errors in toast as its losing the formatting by the time it gets here
+		//TODO: improve rendering of zod errors in toast as its not running through handleSubmit, we should maybe add a handler and have this run the zod validation first and then if it passes, run the mutation or add to handleSubmit
 		onError: (error) => {
+			const message = error instanceof Error ? error.message : String(error);
 			toast.error("Failed to save the form", {
-				description: error.message,
+				description: message,
+			});
+			clientLoggerFn({
+				data: {
+					level: "error",
+					message: "Failed to save form data",
+					meta: {
+						workflowInstanceId,
+						formDefId,
+						error: message,
+					},
+				},
 			});
 		},
 	});
@@ -154,7 +232,6 @@ export const DynamicForm = ({
 								value={field.state.value}
 								onChange={(e) => field.handleChange(e.target.value)}
 								onBlur={field.handleBlur}
-								rows={fieldMeta.rows}
 								placeholder={fieldMeta.description}
 							/>
 						</field.FormControl>

@@ -1,24 +1,33 @@
-import { createServerFn } from "@tanstack/react-start";
-import pino from "pino";
-import * as z from "zod";
-import { env } from "@/env";
+import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
+import { z } from "zod";
 
-const isProd = process.env.NODE_ENV === "production";
+let cachedLogger: Awaited<ReturnType<typeof createLogger>>;
 
-const level = env.LOG_LEVEL ?? (isProd ? "info" : "debug");
-
-export const logger = pino({
-	level,
-	transport: isProd
-		? undefined
-		: {
-				target: "pino-pretty",
-				options: {
-					colorize: true,
-					translateTime: "yyyy-mm-dd HH:MM:ss.l o",
-					ignore: "pid,hostname",
+const createLogger = async () => {
+	const { serverEnv } = await import("@/config/env");
+	const { default: pino } = await import("pino");
+	const isProd = process.env.NODE_ENV === "production";
+	const level = serverEnv.LOG_LEVEL ?? (isProd ? "info" : "debug");
+	return pino({
+		level,
+		transport: isProd
+			? undefined
+			: {
+					target: "pino-pretty",
+					options: {
+						colorize: true,
+						translateTime: "yyyy-mm-dd HH:MM:ss.l o",
+						ignore: "pid,hostname",
+					},
 				},
-			},
+	});
+};
+
+const getLogger = createServerOnlyFn(async () => {
+	if (!cachedLogger) {
+		cachedLogger = await createLogger();
+	}
+	return cachedLogger;
 });
 
 /**
@@ -28,11 +37,11 @@ export const logger = pino({
  *
  * @example
  * // Basic usage:
- * await clientLoggerFn({ data: { level: "info", message: "User logged in" } });
+ * clientLoggerFn({ data: { level: "info", message: "User logged in" } });
  *
  * // Usage with meta field:
  * // The `meta` field can be any object containing additional context for the log entry.
- * await clientLoggerFn({
+ * clientLoggerFn({
  *   data: {
  *     level: "error",
  *     message: "Failed to fetch data",
@@ -44,13 +53,16 @@ export const logger = pino({
 export const clientLoggerFn = createServerFn({
 	method: "POST",
 })
-	.validator(
+	.inputValidator(
 		z.object({
 			level: z.enum(["error", "warn", "info", "debug", "trace"]),
 			message: z.string(),
-			meta: z.object({}).optional(),
+			meta: z.record(z.string(), z.any()).optional(),
 		}),
 	)
 	.handler(async ({ data: { level, message, meta } }) => {
-		logger[level](`Client: ${message}`, meta);
+		const logger = await getLogger();
+		return meta
+			? logger[level](meta, `Client: ${message}`)
+			: logger[level](`Client: ${message}`);
 	});

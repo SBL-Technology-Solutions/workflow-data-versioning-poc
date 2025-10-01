@@ -8,6 +8,7 @@ import { WorkflowDefinitions } from "@/components/dashboard/WorkflowDefinitions"
 import { WorkflowInstances } from "@/components/dashboard/WorkflowInstances";
 import { Button } from "@/components/ui/button";
 import { API } from "@/data/API";
+import { clientLoggerFn } from "@/lib/logger";
 
 export const Route = createFileRoute("/")({
 	component: Home,
@@ -39,7 +40,28 @@ function Home() {
 			API.workflowInstance.mutations.createWorkflowInstanceServerFn({
 				data: { workflowDefId },
 			}),
+		onMutate: (workflowDefId) => {
+			clientLoggerFn({
+				data: {
+					level: "info",
+					message: "Creating workflow instance",
+					meta: {
+						workflowDefId,
+					},
+				},
+			});
+		},
 		onSuccess: ({ id, currentState }) => {
+			clientLoggerFn({
+				data: {
+					level: "info",
+					message: "Workflow instance created",
+					meta: {
+						instanceId: id,
+						state: currentState,
+					},
+				},
+			});
 			queryClient.invalidateQueries({ queryKey: ["workflowInstances"] });
 			toast.success("Workflow instance created successfully");
 			navigate({
@@ -48,8 +70,21 @@ function Home() {
 				search: { state: currentState },
 			});
 		},
-		onError: () => {
-			toast.error("Failed to create workflow instance");
+		onError: (error, workflowDefId) => {
+			const message = error instanceof Error ? error.message : String(error);
+			toast.error("Failed to create workflow instance", {
+				description: message,
+			});
+			clientLoggerFn({
+				data: {
+					level: "error",
+					message: "Failed to create workflow instance",
+					meta: {
+						workflowDefId,
+						error: message,
+					},
+				},
+			});
 		},
 	});
 

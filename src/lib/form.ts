@@ -13,7 +13,7 @@ const BaseFieldSchema = z.object({
 		.regex(/^\S*$/, "Name cannot contain spaces"),
 	type: FormFieldType,
 	label: z.string().min(1, "Label is required"),
-	required: z.boolean().default(false),
+	required: z.boolean(),
 	description: z.string().optional(),
 });
 
@@ -28,7 +28,6 @@ const TextFieldSchema = BaseFieldSchema.extend({
 // Textarea specific schema
 const TextareaFieldSchema = BaseFieldSchema.extend({
 	type: z.literal("textarea"),
-	rows: z.number().optional().default(3),
 	minLength: z.number().optional(),
 	maxLength: z.number().optional(),
 });

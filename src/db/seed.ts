@@ -39,7 +39,6 @@ export const draftFormSchema: FormSchema = {
 			required: true,
 			minLength: 5,
 			maxLength: 500,
-			rows: 4,
 		},
 		{
 			name: "businessLine",
@@ -68,7 +67,6 @@ const approvedFormSchema: FormSchema = {
 			type: "textarea" as const,
 			label: "Approval Decision Rationale",
 			required: true,
-			rows: 4,
 		},
 		{
 			name: "approvalBy",

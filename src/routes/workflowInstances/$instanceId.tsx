@@ -8,6 +8,7 @@ import * as z from "zod";
 import { DynamicForm } from "@/components/DynamicForm";
 import { StateSelector } from "@/components/StateSelector";
 import { API } from "@/data/API";
+import { clientLoggerFn } from "@/lib/logger";
 
 const workflowInstanceSearchSchema = z.object({
 	state: z.string().catch(""),
@@ -46,16 +47,60 @@ function RouteComponent() {
 		});
 	};
 
-	if (!currentFormData.formDefinitionSchema)
+	if (!currentFormData.formDefinitionSchema) {
+		clientLoggerFn({
+			data: {
+				level: "error",
+				message: "Missing form definition schema for workflow instance",
+				meta: {
+					instanceId: currentFormData.workflowInstanceId,
+					state: currentFormData.workflowInstanceState,
+				},
+			},
+		});
 		throw new Error("No schema found for this state");
+	}
 
-	if (!currentFormData.workflowDefinitionMachineConfig)
+	if (!currentFormData.workflowDefinitionMachineConfig) {
+		clientLoggerFn({
+			data: {
+				level: "error",
+				message: "Missing workflow machine config",
+				meta: {
+					instanceId: currentFormData.workflowInstanceId,
+					state: currentFormData.workflowInstanceState,
+				},
+			},
+		});
 		throw new Error("No machine configuration found");
+	}
 
-	if (!currentFormData.formDefinitionId)
+	if (!currentFormData.formDefinitionId) {
+		clientLoggerFn({
+			data: {
+				level: "error",
+				message: "Missing form definition identifier",
+				meta: {
+					instanceId: currentFormData.workflowInstanceId,
+					state: currentFormData.workflowInstanceState,
+				},
+			},
+		});
 		throw new Error("No form definition found for this state");
-	if (!currentFormData.workflowDefinitionStates)
+	}
+	if (!currentFormData.workflowDefinitionStates) {
+		clientLoggerFn({
+			data: {
+				level: "error",
+				message: "Missing workflow definition states",
+				meta: {
+					instanceId: currentFormData.workflowInstanceId,
+					state: currentFormData.workflowInstanceState,
+				},
+			},
+		});
 		throw new Error("No workflow definition states found for this workflow");
+	}
 
 	// Only allow selection of states up to the current state
 	const availableStates = currentFormData.workflowDefinitionStates.slice(
