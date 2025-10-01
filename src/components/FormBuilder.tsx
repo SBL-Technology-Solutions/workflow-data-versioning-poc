@@ -152,8 +152,8 @@ export const FormBuilder = ({
 					children={(field) => (
 						<div className="space-y-4">
 							{field.state.value.map((_, i) => {
-								return (
-									<Card key={field.state.value[i].name}>
+								return +(
+									<Card key={`${i}-${field.state.value[i].name}`}>
 										<CardHeader>
 											<div className="flex justify-between items-center">
 												<CardTitle>Field {i + 1}</CardTitle>
