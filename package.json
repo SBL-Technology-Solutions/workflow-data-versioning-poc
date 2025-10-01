@@ -5,8 +5,8 @@
 	"scripts": {
 		"dev": "dotenv -e .env -- vite dev",
 		"dev:full": "pnpm run db:up && wait-on tcp:5432 && concurrently -k -n DEV,STUDIO -c green,blue \"pnpm dev\" \"pnpm db:studio\"",
-		"dev:testing": "dotenv -e .env.testing pnpm dev",
-		"dev:production": "dotenv -e .env.production pnpm dev",
+		"dev:testing": "dotenv -e .env.testing vite dev",
+		"dev:production": "dotenv -e .env.production vite dev",
 		"build": "drizzle-kit migrate && vite build",
 		"start": "node .output/server/index.mjs",
 		"test": "vitest",
