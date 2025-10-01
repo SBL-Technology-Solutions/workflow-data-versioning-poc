@@ -1,8 +1,10 @@
 import { createServerFn, createServerOnlyFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { serverEnv } from "@/config/env";
 
-const getLogger = createServerOnlyFn(async () => {
+let cachedLogger: Awaited<ReturnType<typeof createLogger>>;
+
+const createLogger = async () => {
+	const { serverEnv } = await import("@/config/env");
 	const { default: pino } = await import("pino");
 	const isProd = process.env.NODE_ENV === "production";
 	const level = serverEnv.LOG_LEVEL ?? (isProd ? "info" : "debug");
@@ -19,6 +21,13 @@ const getLogger = createServerOnlyFn(async () => {
 					},
 				},
 	});
+};
+
+const getLogger = createServerOnlyFn(async () => {
+	if (!cachedLogger) {
+		cachedLogger = await createLogger();
+	}
+	return cachedLogger;
 });
 
 /**
@@ -28,11 +37,11 @@ const getLogger = createServerOnlyFn(async () => {
  *
  * @example
  * // Basic usage:
- * await clientLoggerFn({ data: { level: "info", message: "User logged in" } });
+ * clientLoggerFn({ data: { level: "info", message: "User logged in" } });
  *
  * // Usage with meta field:
  * // The `meta` field can be any object containing additional context for the log entry.
- * await clientLoggerFn({
+ * clientLoggerFn({
  *   data: {
  *     level: "error",
  *     message: "Failed to fetch data",
