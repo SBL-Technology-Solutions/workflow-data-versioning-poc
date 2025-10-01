@@ -232,7 +232,6 @@ export const DynamicForm = ({
 								value={field.state.value}
 								onChange={(e) => field.handleChange(e.target.value)}
 								onBlur={field.handleBlur}
-								rows={fieldMeta.rows}
 								placeholder={fieldMeta.description}
 							/>
 						</field.FormControl>
