@@ -8,6 +8,7 @@
 		"dev:testing": "dotenv -e .env.testing vite dev",
 		"dev:production": "dotenv -e .env.production vite dev",
 		"build": "drizzle-kit migrate && vite build",
+		"build:netlify": "vite build",
 		"start": "node .output/server/index.mjs",
 		"test": "vitest",
 		"db:generate": "drizzle-kit generate",
