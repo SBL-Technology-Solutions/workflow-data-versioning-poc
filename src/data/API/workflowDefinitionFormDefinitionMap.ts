@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { DB } from "../DB";
 
-const workflowDefinitionFormDefinitionQueryKeys = {
+const workflowDefinitionFormDefinitionMapQueryKeys = {
 	all: () => ["workflowDefinitionsFormDefinitions"] as const,
 } as const;
 
@@ -16,5 +16,5 @@ export const workflowDefinitionFormDefinitionMap = {
 	queries: {
 		getWorkflowDefinitionsFormDefinitionsMap,
 	},
-	queryKeys: workflowDefinitionFormDefinitionQueryKeys,
+	queryKeys: workflowDefinitionFormDefinitionMapQueryKeys,
 };
