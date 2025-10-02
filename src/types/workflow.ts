@@ -33,7 +33,7 @@ export type SerializableStateNode = {
 };
 
 export type SerializableWorkflowMachineConfig = {
-	initial?: string;
+	initial: string;
 	states: Record<string, SerializableStateNode>;
 };
 

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WorkflowInstancesIndexRouteImport } from './routes/workflowInstances/index'
 import { Route as WorkflowInstancesInstanceIdRouteImport } from './routes/workflowInstances/$instanceId'
+import { Route as AdminWorkflowNewRouteImport } from './routes/admin/workflow/new'
 import { Route as AdminWorkflowWorkflowIdFormsIndexRouteImport } from './routes/admin/workflow/$workflowId/forms/index'
 
 const IndexRoute = IndexRouteImport.update({
@@ -30,6 +31,11 @@ const WorkflowInstancesInstanceIdRoute =
     path: '/workflowInstances/$instanceId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AdminWorkflowNewRoute = AdminWorkflowNewRouteImport.update({
+  id: '/admin/workflow/new',
+  path: '/admin/workflow/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminWorkflowWorkflowIdFormsIndexRoute =
   AdminWorkflowWorkflowIdFormsIndexRouteImport.update({
     id: '/admin/workflow/$workflowId/forms/',
@@ -41,12 +47,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/workflowInstances/$instanceId': typeof WorkflowInstancesInstanceIdRoute
   '/workflowInstances': typeof WorkflowInstancesIndexRoute
+  '/admin/workflow/new': typeof AdminWorkflowNewRoute
   '/admin/workflow/$workflowId/forms': typeof AdminWorkflowWorkflowIdFormsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/workflowInstances/$instanceId': typeof WorkflowInstancesInstanceIdRoute
   '/workflowInstances': typeof WorkflowInstancesIndexRoute
+  '/admin/workflow/new': typeof AdminWorkflowNewRoute
   '/admin/workflow/$workflowId/forms': typeof AdminWorkflowWorkflowIdFormsIndexRoute
 }
 export interface FileRoutesById {
@@ -54,6 +62,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/workflowInstances/$instanceId': typeof WorkflowInstancesInstanceIdRoute
   '/workflowInstances/': typeof WorkflowInstancesIndexRoute
+  '/admin/workflow/new': typeof AdminWorkflowNewRoute
   '/admin/workflow/$workflowId/forms/': typeof AdminWorkflowWorkflowIdFormsIndexRoute
 }
 export interface FileRouteTypes {
@@ -62,18 +71,21 @@ export interface FileRouteTypes {
     | '/'
     | '/workflowInstances/$instanceId'
     | '/workflowInstances'
+    | '/admin/workflow/new'
     | '/admin/workflow/$workflowId/forms'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/workflowInstances/$instanceId'
     | '/workflowInstances'
+    | '/admin/workflow/new'
     | '/admin/workflow/$workflowId/forms'
   id:
     | '__root__'
     | '/'
     | '/workflowInstances/$instanceId'
     | '/workflowInstances/'
+    | '/admin/workflow/new'
     | '/admin/workflow/$workflowId/forms/'
   fileRoutesById: FileRoutesById
 }
@@ -81,6 +93,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   WorkflowInstancesInstanceIdRoute: typeof WorkflowInstancesInstanceIdRoute
   WorkflowInstancesIndexRoute: typeof WorkflowInstancesIndexRoute
+  AdminWorkflowNewRoute: typeof AdminWorkflowNewRoute
   AdminWorkflowWorkflowIdFormsIndexRoute: typeof AdminWorkflowWorkflowIdFormsIndexRoute
 }
 
@@ -107,6 +120,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WorkflowInstancesInstanceIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/workflow/new': {
+      id: '/admin/workflow/new'
+      path: '/admin/workflow/new'
+      fullPath: '/admin/workflow/new'
+      preLoaderRoute: typeof AdminWorkflowNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/workflow/$workflowId/forms/': {
       id: '/admin/workflow/$workflowId/forms/'
       path: '/admin/workflow/$workflowId/forms'
@@ -121,6 +141,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   WorkflowInstancesInstanceIdRoute: WorkflowInstancesInstanceIdRoute,
   WorkflowInstancesIndexRoute: WorkflowInstancesIndexRoute,
+  AdminWorkflowNewRoute: AdminWorkflowNewRoute,
   AdminWorkflowWorkflowIdFormsIndexRoute:
     AdminWorkflowWorkflowIdFormsIndexRoute,
 }
