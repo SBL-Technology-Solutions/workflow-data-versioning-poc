@@ -8,9 +8,9 @@ import { useEffect } from "react";
 import * as z from "zod";
 import { FormBuilder } from "@/components/FormBuilder";
 import { StateSelector } from "@/components/StateSelector";
-import formDefinitionCollection from "@/data/collections/formDefinition";
-import workflowDefinitionFormDefinitionMapCollection from "@/data/collections/workflowDefinitionFormDefinitionMap";
-import { workflowDefinitionCollection } from "../../../../../data/collections/workflowDefinition";
+import formDefinitionCollection from "@/data/Collections/formDefinition";
+import { workflowDefinitionCollection } from "@/data/Collections/workflowDefinition";
+import workflowDefinitionFormDefinitionMapCollection from "@/data/Collections/workflowDefinitionFormDefinitionMap";
 
 const workflowDefinitionSearchSchema = z.object({
 	state: z.string().catch(""),
@@ -19,7 +19,6 @@ const workflowDefinitionSearchSchema = z.object({
 export const Route = createFileRoute("/admin/workflow/$workflowId/forms/")({
 	component: RouteComponent,
 	validateSearch: workflowDefinitionSearchSchema,
-	ssr: false,
 });
 
 function RouteComponent() {
