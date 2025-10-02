@@ -7,7 +7,7 @@ import * as z from "zod";
 import { FormBuilder } from "@/components/FormBuilder";
 import { StateSelector } from "@/components/StateSelector";
 import workflowDefinitionCollection from "@/data/collections/workflowDefinition";
-import workflowDefinitionFormDefinitionMapCollection from "@/data/collections/workflowDefinitionFormDefinitionMap";
+import workflowDefinitionFormDefinitionMapCollection from "@/data/Collections/workflowDefinitionFormDefinitionMap";
 import formDefinitionCollection from "@/data/collections/formDefinition";
 import { and, eq, useLiveQuery } from "@tanstack/react-db";
 import { useEffect } from "react";
