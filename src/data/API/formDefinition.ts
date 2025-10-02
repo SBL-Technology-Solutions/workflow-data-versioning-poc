@@ -35,7 +35,7 @@ const getFormDefinitionsQueryOptions = () => ({
 const getCurrentFormDefinitionByWorkflowDefIdServerFn = createServerFn({
 	method: "GET",
 })
-	.validator(
+	.inputValidator(
 		z.object({
 			workflowDefId: z.number(),
 			state: z.string().optional(),
@@ -62,7 +62,7 @@ const getCurrentFormDefinitionByWorkflowDefIdQueryOptions = (
 const createFormVersionServerFn = createServerFn({
 	method: "POST",
 })
-	.validator(
+	.inputValidator(
 		z.object({
 			workflowDefId: z.number(),
 			state: z.string(),

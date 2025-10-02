@@ -1,4 +1,4 @@
-import type { AnyFieldApi } from "@tanstack/react-form";
+// biome-ignore-all lint/correctness/noChildrenProp: this is how tanstack form works
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { API } from "@/data/API";
@@ -8,6 +8,7 @@ import {
 	makeInitialValues,
 	FormSchema as ZodFormSchema,
 } from "@/lib/form";
+import { clientLoggerFn } from "@/lib/logger";
 import { Button } from "./ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 import { Checkbox } from "./ui/checkbox";
@@ -44,14 +45,49 @@ export const FormBuilder = ({
 			onChange: ZodFormSchema,
 		},
 		onSubmit: async (data) => {
-			console.log("submitted", data.value);
+			clientLoggerFn({
+				data: {
+					level: "info",
+					message: "Submitting form builder schema",
+					meta: {
+						workflowId,
+						state,
+						fieldCount: data.value.fields.length,
+					},
+				},
+			});
 			try {
 				await API.formDefinition.mutations.createFormVersionServerFn({
 					data: { workflowDefId: workflowId, state, schema: data.value },
 				});
 				toast.success("Form definition saved successfully");
+				clientLoggerFn({
+					data: {
+						level: "info",
+						message: "Form definition saved",
+						meta: {
+							workflowId,
+							state,
+							fieldCount: data.value.fields.length,
+						},
+					},
+				});
 			} catch (error) {
-				toast.error("Failed to save form definition");
+				const message = error instanceof Error ? error.message : String(error);
+				toast.error("Failed to save form definition", {
+					description: message,
+				});
+				clientLoggerFn({
+					data: {
+						level: "error",
+						message: "Failed to save form definition",
+						meta: {
+							workflowId,
+							state,
+							error: message,
+						},
+					},
+				});
 			}
 		},
 	});
@@ -113,11 +149,11 @@ export const FormBuilder = ({
 				<form.AppField
 					name="fields"
 					mode="array"
-					children={(field: AnyFieldApi) => (
+					children={(field) => (
 						<div className="space-y-4">
 							{field.state.value.map((_, i) => {
 								return (
-									<Card key={i}>
+									<Card key={`${i}-${field.state.value[i].name}`}>
 										<CardHeader>
 											<div className="flex justify-between items-center">
 												<CardTitle>Field {i + 1}</CardTitle>
@@ -162,7 +198,9 @@ export const FormBuilder = ({
 															</subField.FormLabel>
 															<Select
 																onValueChange={(value) =>
-																	subField.handleChange(value)
+																	subField.handleChange(
+																		value as FormFieldSchema["type"],
+																	)
 																}
 																defaultValue={subField.state.value}
 															>
@@ -228,8 +266,8 @@ export const FormBuilder = ({
 														<subField.FormControl>
 															<Checkbox
 																checked={subField.state.value}
-																onCheckedChange={(e) =>
-																	subField.handleChange(e)
+																onCheckedChange={(checked) =>
+																	subField.handleChange(checked === true)
 																}
 																onBlur={subField.handleBlur}
 															/>

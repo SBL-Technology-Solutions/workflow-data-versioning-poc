@@ -49,7 +49,7 @@ describe("lib/form", () => {
 			title: "Init",
 			fields: [
 				{ name: "a", type: "text", label: "A", required: false },
-				{ name: "b", type: "textarea", label: "B", required: false, rows: 3 },
+				{ name: "b", type: "textarea", label: "B", required: false },
 			],
 		};
 		const values = makeInitialValues(schema);
@@ -109,7 +109,6 @@ describe("lib/form", () => {
 					type: "textarea",
 					label: "Bio",
 					required: true,
-					rows: 3,
 					minLength: 2,
 					maxLength: 5,
 				},

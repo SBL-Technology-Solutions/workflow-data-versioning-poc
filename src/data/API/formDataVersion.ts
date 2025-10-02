@@ -33,7 +33,7 @@ const getFormDataVersionsQueryOptions = () =>
 const getCurrentFormDataForWorkflowInstanceServerFn = createServerFn({
 	method: "GET",
 })
-	.validator(
+	.inputValidator(
 		z.object({
 			workflowInstanceId: z.number(),
 			state: z.string().optional(),
@@ -61,7 +61,7 @@ const getCurrentFormDataForWorkflowInstanceQueryOptions = (
 const saveFormDataServerFn = createServerFn({
 	method: "POST",
 })
-	.validator(
+	.inputValidator(
 		z.object({
 			workflowInstanceId: z.number(),
 			formDefId: z.number(),

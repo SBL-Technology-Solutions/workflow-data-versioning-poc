@@ -1,5 +1,6 @@
 import { __unsafe_getAllOwnEventDescriptors, createMachine } from "xstate";
 import type { WorkflowInstancesSelect } from "@/db/schema";
+import { clientLoggerFn } from "@/lib/logger";
 import {
 	type SerializableWorkflowMachineConfig,
 	toMachineConfig,
@@ -26,7 +27,17 @@ export const getNextEvents = (
 
 		return nextEvents;
 	} catch (error) {
-		console.error(error);
+		const message = error instanceof Error ? error.message : String(error);
+		clientLoggerFn({
+			data: {
+				level: "error",
+				message: "Failed to compute next workflow events",
+				meta: {
+					error: message,
+					currentState,
+				},
+			},
+		});
 		return [];
 	}
 };

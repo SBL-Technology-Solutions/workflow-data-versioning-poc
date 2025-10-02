@@ -26,7 +26,7 @@ export const getWorkflowDefinitionsQueryOptions = () => ({
 export const getWorkflowDefinitionbyIdFn = createServerFn({
 	method: "GET",
 })
-	.validator(z.object({ id: z.number() }))
+	.inputValidator(z.object({ id: z.number() }))
 	.handler(async ({ data: { id } }) =>
 		DB.workflowDefinition.queries.getWorkflowDefinition(id),
 	);
