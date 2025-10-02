@@ -9,7 +9,7 @@ import * as z from "zod";
 import { FormBuilder } from "@/components/FormBuilder";
 import { StateSelector } from "@/components/StateSelector";
 import formDefinitionCollection from "@/data/collections/formDefinition";
-import workflowDefinitionCollection from "@/data/collections/workflowDefinition";
+import { workflowDefinitionCollection } from "@/data/collections/workflowDefinition";
 import workflowDefinitionFormDefinitionMapCollection from "@/data/collections/workflowDefinitionFormDefinitionMap";
 
 const workflowDefinitionSearchSchema = z.object({

@@ -1,11 +1,10 @@
-import workflowDefinitionCollection from "@/data/collections/workflowDefinition";
 import { useLiveQuery } from "@tanstack/react-db";
 import { Link } from "@tanstack/react-router";
+import { workflowDefinitionCollection } from "@/data/collections/workflowDefinition";
 
 export function WorkflowDefinitions() {
-
 	const { data: workflowDefinitions } = useLiveQuery((q) =>
-		q.from({ workflowDefinition: workflowDefinitionCollection })
+		q.from({ workflowDefinition: workflowDefinitionCollection }),
 	);
 
 	return (
@@ -19,7 +18,7 @@ export function WorkflowDefinitions() {
 						ID:{" "}
 						<Link
 							to={"/admin/workflow/$workflowId/forms"}
-							search={{ state: wf.machineConfig.initial }}
+							search={{ state: wf.machineConfig.initial || "" }}
 							params={{ workflowId: wf.id.toString() }}
 							className="text-blue-500 hover:underline"
 						>
