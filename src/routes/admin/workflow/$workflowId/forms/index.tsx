@@ -9,8 +9,8 @@ import * as z from "zod";
 import { FormBuilder } from "@/components/FormBuilder";
 import { StateSelector } from "@/components/StateSelector";
 import formDefinitionCollection from "@/data/collections/formDefinition";
-import { workflowDefinitionCollection } from "@/data/collections/workflowDefinition";
 import workflowDefinitionFormDefinitionMapCollection from "@/data/collections/workflowDefinitionFormDefinitionMap";
+import { workflowDefinitionCollection } from "../../../../../data/collections/workflowDefinition";
 
 const workflowDefinitionSearchSchema = z.object({
 	state: z.string().catch(""),
