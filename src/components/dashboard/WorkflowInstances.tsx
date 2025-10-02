@@ -24,6 +24,7 @@ export function WorkflowInstances() {
 						</Link>
 					</div>
 					<div>Current State: {instance.currentState}</div>
+					<div>Status: {instance.status}</div>
 					<div>Workflow Definition ID: {instance.workflowDefId}</div>
 				</div>
 			))}

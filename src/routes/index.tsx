@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Suspense } from "react";
 import { toast } from "sonner";
 import { FormDataVersions } from "@/components/dashboard/FormDataVersions";
@@ -35,7 +35,7 @@ function Home() {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
 
-	const createWorkflowInstanceMutation = useMutation({
+	const createWorkflowMutation = useMutation({
 		mutationFn: (workflowDefId: number) =>
 			API.workflowInstance.mutations.createWorkflowInstanceServerFn({
 				data: { workflowDefId },
@@ -90,27 +90,22 @@ function Home() {
 
 	const handleCreateWorkflow = () => {
 		// For now, we'll use the first workflow definition
-		createWorkflowInstanceMutation.mutate(1);
+		createWorkflowMutation.mutate(1);
 	};
 
 	return (
 		<div className="p-8 relative">
 			<div className="flex justify-between items-center mb-8">
 				<h1 className="text-2xl font-bold">Dashboard</h1>
-				<div>
-					<Button variant="outline" asChild>
-						<Link to="/admin/workflow/new">Create New Workflow</Link>
-					</Button>
-					<Button
-						onClick={handleCreateWorkflow}
-						disabled={createWorkflowInstanceMutation.isPending}
-						variant="default"
-					>
-						{createWorkflowInstanceMutation.isPending
-							? "Creating..."
-							: "Create New Workflow Instance"}
-					</Button>
-				</div>
+				<Button
+					onClick={handleCreateWorkflow}
+					disabled={createWorkflowMutation.isPending}
+					variant="default"
+				>
+					{createWorkflowMutation.isPending
+						? "Creating..."
+						: "Create New Workflow"}
+				</Button>
 			</div>
 
 			<Suspense fallback={<div>Loading workflow definitions...</div>}>
