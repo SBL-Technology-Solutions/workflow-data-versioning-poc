@@ -5,7 +5,7 @@ const workflowDefinitionFormDefinitionMapQueryKeys = {
 	all: () => ["workflowDefinitionsFormDefinitionsMap"] as const,
 } as const;
 
-export const getWorkflowDefinitionsFormDefinitionsMap = createServerFn({
+const getWorkflowDefinitionsFormDefinitionsMap = createServerFn({
 	method: "GET",
 }).handler(async () => {
 	return DB.workflowDefinitionFormDefinitionMap
