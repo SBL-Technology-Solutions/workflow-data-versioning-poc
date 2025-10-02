@@ -19,6 +19,7 @@ const workflowDefinitionSearchSchema = z.object({
 export const Route = createFileRoute("/admin/workflow/$workflowId/forms/")({
 	component: RouteComponent,
 	validateSearch: workflowDefinitionSearchSchema,
+	ssr: false,
 });
 
 function RouteComponent() {
