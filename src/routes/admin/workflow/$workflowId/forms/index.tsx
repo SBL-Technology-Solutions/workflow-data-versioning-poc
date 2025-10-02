@@ -1,16 +1,16 @@
+import { and, eq, useLiveQuery } from "@tanstack/react-db";
 import {
 	createFileRoute,
 	useNavigate,
 	useSearch,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 import * as z from "zod";
 import { FormBuilder } from "@/components/FormBuilder";
 import { StateSelector } from "@/components/StateSelector";
-import workflowDefinitionCollection from "@/data/collections/workflowDefinition";
-import workflowDefinitionFormDefinitionMapCollection from "@/data/Collections/workflowDefinitionFormDefinitionMap";
 import formDefinitionCollection from "@/data/collections/formDefinition";
-import { and, eq, useLiveQuery } from "@tanstack/react-db";
-import { useEffect } from "react";
+import workflowDefinitionCollection from "@/data/collections/workflowDefinition";
+import workflowDefinitionFormDefinitionMapCollection from "@/data/collections/workflowDefinitionFormDefinitionMap";
 
 const workflowDefinitionSearchSchema = z.object({
 	state: z.string().catch(""),
@@ -23,63 +23,62 @@ export const Route = createFileRoute("/admin/workflow/$workflowId/forms/")({
 
 function RouteComponent() {
 	const { workflowId } = Route.useParams();
-	const { state: urlState } = useSearch({ from: "/admin/workflow/$workflowId/forms/" });
+	const { state: urlState } = useSearch({
+		from: "/admin/workflow/$workflowId/forms/",
+	});
 	const navigate = useNavigate();
 
 	// Get workflow definition to access its states array
-    const { data: workflowDef } = useLiveQuery(
-        (q) =>
-            q
-                .from({ wd: workflowDefinitionCollection })
-                .where(({ wd }) => eq(wd.id, Number(workflowId)))
-                .select(({ wd }) => ({
-                    states: wd.states,
-                })),
-        [workflowId]
-    );
+	const { data: workflowDef } = useLiveQuery(
+		(q) =>
+			q
+				.from({ wd: workflowDefinitionCollection })
+				.where(({ wd }) => eq(wd.id, Number(workflowId)))
+				.select(({ wd }) => ({
+					states: wd.states,
+				})),
+		[workflowId],
+	);
 
 	// Navigate to first state if no state is in URL
-    useEffect(() => {
-        if (!urlState && workflowDef?.[0]?.states?.length) {
-            navigate({
-                to: "/admin/workflow/$workflowId/forms",
-                params: { workflowId },
-                search: { state: workflowDef[0].states[0] },
-                replace: true,
-            });
-        }
-    }, [urlState, workflowDef, navigate, workflowId]);
+	useEffect(() => {
+		if (!urlState && workflowDef?.[0]?.states?.length) {
+			navigate({
+				to: "/admin/workflow/$workflowId/forms",
+				params: { workflowId },
+				search: { state: workflowDef[0].states[0] },
+				replace: true,
+			});
+		}
+	}, [urlState, workflowDef, navigate, workflowId]);
 
-	const { data: workflowDefinitionsAndFormDefinitions } = useLiveQuery((q) =>
-		q
-			.from({ wd: workflowDefinitionCollection })
-			.innerJoin(
-				{ map: workflowDefinitionFormDefinitionMapCollection},
-				({ wd, map }) => eq(wd.id, map.workflowDefinitionId ),
-			)
-			.innerJoin(
-				{ fd: formDefinitionCollection },
-				({ map, fd }) => eq(map.formDefinitionId, fd.id),
-			)
-			.where(({ wd, fd }) => 
-				and(
-					eq(wd.id, Number(workflowId)),
-					eq(fd.state, urlState)
+	const { data: workflowDefinitionsAndFormDefinitions } = useLiveQuery(
+		(q) =>
+			q
+				.from({ wd: workflowDefinitionCollection })
+				.innerJoin(
+					{ map: workflowDefinitionFormDefinitionMapCollection },
+					({ wd, map }) => eq(wd.id, map.workflowDefinitionId),
 				)
-			)
-			.orderBy(({ fd }) => fd.version, 'desc')
-			.limit(1)
-			.select(({ wd, fd }) => ({
-				workflowDefId: wd.id,
-				workflowDefName: wd.name,
-				states: wd.states,
-				state: fd.state,
-				formDefId: fd.id,
-				schema: fd.schema,
-				version: fd.version,
-			})),
-		[workflowId, urlState]
-	)
+				.innerJoin({ fd: formDefinitionCollection }, ({ map, fd }) =>
+					eq(map.formDefinitionId, fd.id),
+				)
+				.where(({ wd, fd }) =>
+					and(eq(wd.id, Number(workflowId)), eq(fd.state, urlState)),
+				)
+				.orderBy(({ fd }) => fd.version, "desc")
+				.limit(1)
+				.select(({ wd, fd }) => ({
+					workflowDefId: wd.id,
+					workflowDefName: wd.name,
+					states: wd.states,
+					state: fd.state,
+					formDefId: fd.id,
+					schema: fd.schema,
+					version: fd.version,
+				})),
+		[workflowId, urlState],
+	);
 
 	const latestWorkflowDefFormDef = workflowDefinitionsAndFormDefinitions[0];
 
