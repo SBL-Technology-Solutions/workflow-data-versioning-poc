@@ -1,5 +1,5 @@
-import formDefinitionCollection from "@/data/collections/formDefinition";
 import { useLiveQuery } from "@tanstack/react-db";
+import formDefinitionCollection from "@/data/Collections/formDefinition";
 
 export function FormDefinitions() {
 	const { data: formDefinitions } = useLiveQuery((q) =>
