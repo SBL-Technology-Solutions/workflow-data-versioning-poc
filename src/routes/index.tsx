@@ -9,20 +9,9 @@ import { WorkflowInstances } from "@/components/dashboard/WorkflowInstances";
 import { Button } from "@/components/ui/button";
 import { API } from "@/data/API";
 import { clientLoggerFn } from "@/lib/logger";
-import workflowDefinitionCollection from "@/data/collections/workflowDefinition";
-import workflowInstanceCollection from "@/data/collections/workflowInstance";
-import formDefinitionCollection from "@/data/collections/formDefinition";
-import formDataVersionCollection from "@/data/collections/formDataVersion";
 
 export const Route = createFileRoute("/")({
-	component: Home,
-	loader: async () => {
-		await workflowDefinitionCollection.preload()
-		await workflowInstanceCollection.preload()
-		await formDefinitionCollection.preload()
-		await formDataVersionCollection.preload()
-		return null	
-  	},
+	component: Home
 });
 
 function Home() {

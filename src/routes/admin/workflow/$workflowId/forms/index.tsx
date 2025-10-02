@@ -18,12 +18,6 @@ const workflowDefinitionSearchSchema = z.object({
 
 export const Route = createFileRoute("/admin/workflow/$workflowId/forms/")({
 	component: RouteComponent,
-	loader: async () => {
-			await workflowDefinitionCollection.preload()
-			await formDefinitionCollection.preload()
-			await workflowDefinitionFormDefinitionMapCollection.preload()
-			return null	
-		},
 	validateSearch: workflowDefinitionSearchSchema,
 });
 
