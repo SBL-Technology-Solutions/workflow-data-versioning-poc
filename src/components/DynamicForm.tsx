@@ -180,12 +180,6 @@ export const DynamicForm = ({
 		},
 	});
 
-	const triggerAutosave = (values: Record<string, string>) => {
-		if (!saveFormData.isPending) {
-			saveFormData.mutate(values);
-		}
-	};
-
 	const validationSchema = useMemo(
 		() => createZodValidationSchema(schema),
 		[schema],
@@ -201,7 +195,30 @@ export const DynamicForm = ({
 		[machineConfig, state],
 	);
 
+	const handleFieldChange = (formApi: any, fieldApi: any) => {
+		if (saveFormData.isPending) {
+			return;
+		}
+
+		const fieldName = fieldApi.name;
+		const currentValue = fieldApi.state.value;
+		const initialValue = effectiveInitialData[fieldName];
+		
+		if (currentValue !== initialValue) {
+			saveFormData.mutate(formApi.state.values);
+		}
+	};
+
 	const form = useAppForm({
+		listeners: {
+			onBlur: ({ formApi, fieldApi }) => {
+				handleFieldChange(formApi, fieldApi);
+			},
+			onChange: ({ formApi, fieldApi }) => {
+				handleFieldChange(formApi, fieldApi);
+			},
+			onChangeDebounceMs: 10000,
+		},
 		defaultValues: effectiveInitialData,
 		onSubmitMeta: defaultSubmitMeta,
 		onSubmit: async ({ value, meta }) => {
@@ -237,15 +254,8 @@ export const DynamicForm = ({
 							<Textarea
 								id={field.name}
 								value={field.state.value}
-								onChange={(e) => {
-									field.handleChange(e.target.value)
-									setTimeout(() => {
-										triggerAutosave(form.state.values);
-									}, 10000);
-								}}
-								onBlur={() => { 
-									field.handleBlur(); 
-									saveFormData.mutate(form.state.values); }}
+								onChange={(e) => field.handleChange(e.target.value)}
+								onBlur={() => field.handleBlur()}
 								placeholder={fieldMeta.description}
 							/>
 						</field.FormControl>
@@ -254,16 +264,8 @@ export const DynamicForm = ({
 							<Input
 								id={field.name}
 								value={field.state.value}
-								onChange={(e) => {
-									field.handleChange(e.target.value);
-									setTimeout(() => {
-										triggerAutosave(form.state.values);
-									}, 10000);
-								}}
-								onBlur={() => { 
-									field.handleBlur(); 
-									saveFormData.mutate(form.state.values); 
-								}}
+								onChange={(e) => field.handleChange(e.target.value)}
+								onBlur={() => field.handleBlur()}
 								type={fieldMeta.type}
 								placeholder={fieldMeta.description}
 							/>
