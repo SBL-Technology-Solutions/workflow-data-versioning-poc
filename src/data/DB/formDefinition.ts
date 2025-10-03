@@ -56,9 +56,7 @@ const getCurrentFormForWorkflowDefId = async (
 			workflowDefName: workflowDefinitions.name,
 			states: workflowDefinitions.states,
 			state: formDefinitions.state,
-			formDefId: sql<FormDefinitionsSelect["id"]>`${formDefinitions.id}`.as(
-				"formDefId",
-			),
+			formDefId: formDefinitions.id,
 			schema: formDefinitions.schema,
 			version: formDefinitions.version,
 		})
@@ -78,9 +76,11 @@ const getCurrentFormForWorkflowDefId = async (
 					formDefinitions.id,
 				),
 				eq(formDefinitions.state, statesJoinExpr),
-			),
+			)
 		)
-		.where(eq(workflowDefinitions.id, workflowDefId))
+		.where(
+			eq(workflowDefinitions.id, workflowDefId),
+		)
 		.orderBy(sql`${formDefinitions.version} DESC NULLS LAST`)
 		.limit(1);
 

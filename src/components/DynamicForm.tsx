@@ -39,6 +39,7 @@ export const DynamicForm = ({
 }: DynamicFormProps) => {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+
 	const sendWorkflowEvent = useMutation({
 		mutationFn: ({
 			event,
@@ -179,6 +180,12 @@ export const DynamicForm = ({
 		},
 	});
 
+	const triggerAutosave = (values: Record<string, string>) => {
+		if (!saveFormData.isPending) {
+			saveFormData.mutate(values);
+		}
+	};
+
 	const validationSchema = useMemo(
 		() => createZodValidationSchema(schema),
 		[schema],
@@ -230,8 +237,15 @@ export const DynamicForm = ({
 							<Textarea
 								id={field.name}
 								value={field.state.value}
-								onChange={(e) => field.handleChange(e.target.value)}
-								onBlur={field.handleBlur}
+								onChange={(e) => {
+									field.handleChange(e.target.value)
+									setTimeout(() => {
+										triggerAutosave(form.state.values);
+									}, 10000);
+								}}
+								onBlur={() => { 
+									field.handleBlur(); 
+									saveFormData.mutate(form.state.values); }}
 								placeholder={fieldMeta.description}
 							/>
 						</field.FormControl>
@@ -240,8 +254,16 @@ export const DynamicForm = ({
 							<Input
 								id={field.name}
 								value={field.state.value}
-								onChange={(e) => field.handleChange(e.target.value)}
-								onBlur={field.handleBlur}
+								onChange={(e) => {
+									field.handleChange(e.target.value);
+									setTimeout(() => {
+										triggerAutosave(form.state.values);
+									}, 10000);
+								}}
+								onBlur={() => { 
+									field.handleBlur(); 
+									saveFormData.mutate(form.state.values); 
+								}}
 								type={fieldMeta.type}
 								placeholder={fieldMeta.description}
 							/>
@@ -272,15 +294,6 @@ export const DynamicForm = ({
 				<form.Subscribe selector={(state) => state.canSubmit}>
 					{(canSubmit) => (
 						<div className="flex space-x-2">
-							<Button
-								type="button"
-								disabled={saveFormData.isPending}
-								variant="outline"
-								//TODO: This is currently ignoring client side zod validation as its not running through handleSubmit, we should maybe add a handler and have this run the zod validation first and then if it passes, run the mutation or add to handleSubmit
-								onClick={() => saveFormData.mutate(form.state.values)}
-							>
-								{saveFormData.isPending ? "Saving..." : "Save"}
-							</Button>
 							<div className="flex space-x-2">
 								{nextEvents.length === 0
 									? null
