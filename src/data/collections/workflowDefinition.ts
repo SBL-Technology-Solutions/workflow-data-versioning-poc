@@ -11,6 +11,6 @@ export const workflowDefinitionCollection = createCollection(
 		queryKey: API.workflowDefinition.queryKeys.all(),
 		queryFn: getWorkflowDefinitionsFn,
 		queryClient,
-		getKey: (workflowDefiniton) => workflowDefiniton.id,
+		getKey: (workflowDefinition) => workflowDefinition.id,
 	}),
 );

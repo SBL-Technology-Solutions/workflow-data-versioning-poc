@@ -202,7 +202,7 @@ export const DynamicForm = ({
 
 		const fieldName = fieldApi.name;
 		const currentValue = fieldApi.state.value;
-		const initialValue = effectiveInitialData[fieldName] || "";
+		const initialValue = effectiveInitialData[fieldName];
 		
 		if (currentValue !== initialValue) {
 			saveFormData.mutate(formApi.state.values);
