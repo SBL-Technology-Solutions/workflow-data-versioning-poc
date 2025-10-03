@@ -8,9 +8,9 @@ import { useEffect } from "react";
 import * as z from "zod";
 import { FormBuilder } from "@/components/FormBuilder";
 import { StateSelector } from "@/components/StateSelector";
-import formDefinitionCollection from "@/data/collection/formDefinition";
-import { workflowDefinitionCollection } from "@/data/collection/workflowDefinition";
-import workflowDefinitionFormDefinitionMapCollection from "@/data/collection/workflowDefinitionFormDefinitionMap";
+import formDefinitionCollection from "@/data/collections/formDefinition";
+import { workflowDefinitionCollection } from "@/data/collections/workflowDefinition";
+import workflowDefinitionFormDefinitionMapCollection from "@/data/collections/workflowDefinitionFormDefinitionMap";
 
 const workflowDefinitionSearchSchema = z.object({
 	state: z.string().catch(""),

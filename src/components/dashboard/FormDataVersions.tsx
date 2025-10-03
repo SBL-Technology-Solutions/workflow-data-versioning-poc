@@ -1,5 +1,5 @@
 import { useLiveQuery } from "@tanstack/react-db";
-import formDataVersionCollection from "@/data/collection/formDataVersion";
+import formDataVersionCollection from "@/data/collections/formDataVersion";
 
 export function FormDataVersions() {
 	const { data: formDataVersions } = useLiveQuery((q) =>
